@@ -55,3 +55,17 @@ class OtimizadorModelos:
                 'min_samples_leaf': [1, 2, 4],
                 'class_weight': [None, 'balanced']
             },
+            'KNN': {
+                'n_neighbors': [3, 5, 7, 9],
+                'weights': ['uniform', 'distance'],
+                'metric': ['euclidean', 'cosine']
+            },
+            'NaiveBayes': {
+                'alpha': [0.1, 0.5, 1.0, 2.0]
+            },
+            'LogisticRegression': {
+                'C': [0.1, 1.0, 10.0],
+                'class_weight': [None, 'balanced'],
+                'solver': ['lbfgs', 'newton-cg'],
+                'max_iter': [1000]
+            },
