@@ -1,0 +1,4 @@
+PyPDF2
+nltk
+langdetect
+chardet
