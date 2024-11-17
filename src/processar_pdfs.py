@@ -132,21 +132,37 @@ def limpar_texto(texto: str, preservar_palavras: set = None) -> str:
         return "", texto
 
 
-def salvar_texto_em_arquivo(nome_arquivo, texto_limpo, diretorio_raiz, classe):
-    """Salva o texto processado com encoding UTF-8."""
+def salvar_texto_em_arquivo(nome_arquivo: str, texto_limpo: str,
+                            texto_original: str, diretorio_raiz: str,
+                            classe: str) -> bool:
+    """Salva tanto o texto limpo quanto o original."""
     try:
-        diretorio_saida = os.path.join(
-            diretorio_raiz, "textos_extraidos", classe)
-        os.makedirs(diretorio_saida, exist_ok=True)
+        # diretório para textos limpos
+        diretorio_saida_limpo = os.path.join(
+            diretorio_raiz, "textos_extraidos", classe, "limpos")
+        # diretório para textos originais
+        diretorio_saida_original = os.path.join(
+            diretorio_raiz, "textos_extraidos", classe, "originais")
 
-        caminho_arquivo = os.path.join(diretorio_saida, f"{nome_arquivo}.txt")
-        with open(caminho_arquivo, 'w', encoding='utf-8') as f:
+        os.makedirs(diretorio_saida_limpo, exist_ok=True)
+        os.makedirs(diretorio_saida_original, exist_ok=True)
+
+        # salvando texto limpo
+        caminho_arquivo_limpo = os.path.join(
+            diretorio_saida_limpo, f"{nome_arquivo}.txt")
+        with open(caminho_arquivo_limpo, 'w', encoding='utf-8') as f:
             f.write(texto_limpo)
 
-        logging.info(f"Texto salvo com sucesso: {caminho_arquivo}")
+        # dalvando texto original
+        caminho_arquivo_original = os.path.join(
+            diretorio_saida_original, f"{nome_arquivo}_original.txt")
+        with open(caminho_arquivo_original, 'w', encoding='utf-8') as f:
+            f.write(texto_original)
+
+        logging.info(f"textos salvos com sucesso: {caminho_arquivo_limpo}")
         return True
     except Exception as e:
-        logging.error(f"Erro ao salvar arquivo {nome_arquivo}: {str(e)}")
+        logging.error(f"erro ao salvar arquivo {nome_arquivo}: {str(e)}")
         return False
 
 
