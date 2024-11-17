@@ -56,14 +56,16 @@ def pdf_para_txt(caminho_pdf):
         with open(caminho_pdf, 'rb') as f:
             leitor = PyPDF2.PdfReader(f)
 
+            # verifica se o PDF está corrompido
             if not leitor.pages:
                 logging.warning(f"PDF possivelmente corrompido: {caminho_pdf}")
                 return ""
 
+            # verificando se a página contém principalmente imagens
             for pagina in leitor.pages:
                 conteudo = pagina.extract_text() or ""
 
-                if len(conteudo.strip()) < 50:
+                if len(conteudo.strip()) < 50:  # retorno - página com pouco texto com pouco texto
                     logging.warning(
                         f"Página possivelmente contém principalmente imagens: {caminho_pdf}")
 
