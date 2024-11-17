@@ -256,12 +256,15 @@ def processar_pdfs(diretorio_raiz: str,
                 if texto_original and texto_limpo else 0
             }
 
-            # salvando em um DataFrame para análise posterior, caso for preciso
+            # bloco desativado
+            """"
+            salvando em um DataFrame para análise posterior, caso for preciso
             df_stats = pd.DataFrame([stats_texto])
             stats_file = os.path.join(
                 diretorio_raiz, 'estatisticas_processamento.csv')
             df_stats.to_csv(stats_file, mode='a', header=not os.path.exists(stats_file),
                             index=False)
+            """
 
     # log final das estatísticas
     logging.info("=== Estatísticas de Processamento ===")
@@ -269,10 +272,23 @@ def processar_pdfs(diretorio_raiz: str,
     logging.info(f"Sucessos: {estatisticas['sucessos']}")
     logging.info(f"Falhas: {estatisticas['falhas']}")
     for classe, stats in estatisticas['por_classe'].items():
-        logging.info(f"Classe {classe}: Processados {
-                     stats['processados']}, Falhas {stats['falhas']}")
+        logging.info(f"Classe {classe}: Processados {stats['processados']}, "
+                     f"Falhas {stats['falhas']}")
 
-    if not textos:
+    # salvando métricas gerais
+    metricas_gerais = {
+        'total_documentos': estatisticas['total_processado'],
+        'documentos_processados': estatisticas['sucessos'],
+        'documentos_falhos': estatisticas['falhas'],
+        'taxa_sucesso': estatisticas['sucessos'] / estatisticas['total_processado']
+        if estatisticas['total_processado'] > 0 else 0
+    }
+
+    df_metricas = pd.DataFrame([metricas_gerais])
+    df_metricas.to_csv(os.path.join(
+        diretorio_raiz, 'metricas_gerais.csv'), index=False)
+
+    if not textos_limpos:
         raise ValueError("Nenhum texto foi extraído com sucesso.")
 
-    return textos, classes
+    return textos_limpos, textos_originais, classes
