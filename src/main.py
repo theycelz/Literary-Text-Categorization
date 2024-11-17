@@ -2,6 +2,7 @@ import os
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split
 from processar_pdfs import processar_pdfs
+from otimizador_modelos import OtimizadorModelos
 import logging
 from analise_textos import AnalisadorTextos
 import matplotlib.pyplot as plt
@@ -243,7 +244,14 @@ def main():
             f.write(f"\nDimensões da matriz de treino: {X_train.shape}\n")
             f.write(f"Dimensões da matriz de teste: {X_test.shape}\n")
 
-        # 12. retornando os dados processados e o classificador
+        # 12. gerando e trabalhando otimizações
+        otimizador = OtimizadorModelos(X_train, y_train, X_test, y_test)
+        otimizador.otimizar_todos_modelos()
+        otimizador.gerar_graficos_comparativos()
+        otimizador.salvar_resultados()
+        resultados_significancia = otimizador.avaliar_significancia()
+
+        # 13. retornando os dados processados e o classificador
         return X_train, X_test, y_train, y_test, processador.vectorizer.get_feature_names_out(), classificador
 
     except Exception as e:
