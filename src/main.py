@@ -209,7 +209,7 @@ def main():
             min_df=3,              # frequência mínima dos termos
             max_df=0.95,           # frequência máxima (%)
             ngram_range=(1, 2),    # uni e bigramas
-            max_features=100000     # tamanho máximo do vocabulário
+            max_features=10000     # tamanho máximo do vocabulário
         )
 
         # 7. realizando a vetorização e divisão
