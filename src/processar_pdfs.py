@@ -18,7 +18,7 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
-# baixando recursos do NLTK
+# baixando recursos da biblioteca NLTK
 try:
     nltk.download('punkt')
     nltk.download('stopwords')
@@ -56,7 +56,6 @@ def pdf_para_txt(caminho_pdf):
         with open(caminho_pdf, 'rb') as f:
             leitor = PyPDF2.PdfReader(f)
 
-            # Verifica se o PDF está corrompido
             if not leitor.pages:
                 logging.warning(f"PDF possivelmente corrompido: {caminho_pdf}")
                 return ""
@@ -64,8 +63,7 @@ def pdf_para_txt(caminho_pdf):
             for pagina in leitor.pages:
                 conteudo = pagina.extract_text() or ""
 
-                # verificando se a página contém principalmente imagens
-                if len(conteudo.strip()) < 50:  # retorno - página com pouco texto com pouco texto
+                if len(conteudo.strip()) < 50:
                     logging.warning(
                         f"Página possivelmente contém principalmente imagens: {caminho_pdf}")
 
