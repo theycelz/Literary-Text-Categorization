@@ -1,15 +1,11 @@
 import os
-import PyPDF2
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
-import nltk
-import re
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.model_selection import train_test_split
+from processar_pdfs import processar_pdfs
 import logging
-import shutil
-from langdetect import detect
-import chardet
-from typing import List, Tuple, Dict
-import pandas as pd
+from analise_textos import AnalisadorTextos
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 def log_vetores_e_vocabulario(vectorizer, X, textos, caminho_arquivo="vocabulario_e_vetores.txt"):
