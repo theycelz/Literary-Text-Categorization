@@ -173,7 +173,7 @@ def main():
     )
 
     try:
-        # 1. adicionando configuração inicial de diretórios
+        # 1. configuração inicial de diretórios
         diretorio_raiz = os.path.dirname(os.path.abspath(__file__))
         diretorios = criar_diretorios_saida(diretorio_raiz)
 
