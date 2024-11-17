@@ -76,3 +76,14 @@ class OtimizadorModelos:
                 'early_stopping': [True]
             }
         }
+
+        def otimizar_modelo(self, nome_modelo: str, modelo, param_grid: Dict):
+        """
+        Otimiza um modelo usando GridSearchCV.
+        
+        Args:
+            nome_modelo: Nome do modelo
+            modelo: Instância do modelo
+            param_grid: Grid de hiperparâmetros
+        """
+        logging.info(f"Iniciando otimização do modelo: {nome_modelo}")
