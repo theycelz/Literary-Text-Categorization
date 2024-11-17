@@ -1,4 +1,3 @@
-# processar_pdfs.py
 import os
 import PyPDF2
 from nltk.corpus import stopwords
@@ -9,6 +8,8 @@ import logging
 import shutil
 from langdetect import detect
 import chardet
+from typing import List, Tuple, Dict
+import pandas as pd
 
 # logging (para depuração)
 logging.basicConfig(
