@@ -109,17 +109,16 @@ class AnalisadorTextos:
                                             key=lambda x: x[1], reverse=True)[:20]:
                     f.write(f"{palavra}: {freq:.4f}\n")
 
+    def validar_limpeza(self, texto_original: str, texto_limpo: str) -> bool:
+        """Valida se a limpeza não foi excessiva."""
+        palavras_originais = set(word_tokenize(texto_original.lower()))
+        palavras_limpas = set(word_tokenize(texto_limpo.lower()))
 
-def validar_limpeza(self, texto_original: str, texto_limpo: str) -> bool:
-    """Valida se a limpeza não foi excessiva."""
-    palavras_originais = set(word_tokenize(texto_original.lower()))
-    palavras_limpas = set(word_tokenize(texto_limpo.lower()))
+        # calculando proporção de palavras mantidas
+        proporcao_mantida = len(palavras_limpas) / len(palavras_originais)
 
-    # calculando proporção de palavras mantidas
-    proporcao_mantida = len(palavras_limpas) / len(palavras_originais)
-
-    # aferindo que se menos de 40% das palavras foram mantidas isso significa limpeza excessiva
-    return proporcao_mantida >= 0.4
+        # aferindo que se menos de 40% das palavras foram mantidas isso significa limpeza excessiva
+        return proporcao_mantida >= 0.4
 
 
 def main(textos: List[str], classes: List[str], textos_originais: List[str]) -> None:
