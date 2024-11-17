@@ -154,3 +154,36 @@ class OtimizadorModelos:
                 'scores': scores,
                 'p_value': p_value
             }
+
+        def gerar_graficos_comparativos(self, diretorio_saida: str = 'resultados'):
+            """Gera gráficos comparativos entre os modelos."""
+            os.makedirs(diretorio_saida, exist_ok=True)
+
+            # preparando dados para visualização
+            metricas_df = []
+            for modelo, resultado in self.resultados.items():
+                for metrica, valores in resultado['scores_cv'].items():
+                    metricas_df.append({
+                        'modelo': modelo,
+                        'metrica': metrica,
+                        'valor': valores['mean'],
+                        'std': valores['std']
+                    })
+
+            df = pd.DataFrame(metricas_df)
+
+            # gerando gráfico de barras com erro
+            plt.figure(figsize=(12, 6))
+            sns.barplot(
+                data=df,
+                x='modelo',
+                y='valor',
+                hue='metrica',
+                capsize=0.1
+            )
+            plt.title('Comparação de Métricas entre Modelos')
+            plt.xticks(rotation=45)
+            plt.tight_layout()
+            plt.savefig(os.path.join(
+                diretorio_saida, 'comparacao_modelos.png'))
+            plt.close()
