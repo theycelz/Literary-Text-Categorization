@@ -3,3 +3,7 @@ nltk
 langdetect
 chardet
 sklearn
+pandas
+seaborn
+matplotlib
+numpy
