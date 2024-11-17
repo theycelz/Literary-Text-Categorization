@@ -123,3 +123,13 @@ class OtimizadorModelos:
         except Exception as e:
             logging.error(f"Erro na otimização do modelo {
                           nome_modelo}: {str(e)}")
+
+        def otimizar_todos_modelos(self):
+            """Otimiza todos os modelos definidos."""
+            modelos = {
+                'DecisionTree': DecisionTreeClassifier(random_state=42),
+                'KNN': KNeighborsClassifier(),
+                'NaiveBayes': MultinomialNB(),
+                'LogisticRegression': LogisticRegression(random_state=42),
+                'MLP': MLPClassifier(random_state=42, max_iter=1000)
+            }
