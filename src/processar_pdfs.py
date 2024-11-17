@@ -29,9 +29,12 @@ except Exception as e:
 def criar_backup(diretorio_pdfs):
     """Cria backup dos arquivos originais."""
     backup_dir = diretorio_pdfs + "_backup"
-    if not os.path.exists(backup_dir):
-        shutil.copytree(diretorio_pdfs, backup_dir)
-        logging.info(f"Backup criado em: {backup_dir}")
+    try:
+        if not os.path.exists(backup_dir):
+            shutil.copytree(diretorio_pdfs, backup_dir)
+            logging.info(f"Backup criado em: {backup_dir}")
+    except Exception as e:
+        logging.error(f"Erro ao criar backup: {str(e)}")
     return backup_dir
 
 
@@ -45,7 +48,8 @@ def verificar_lingua(texto, lingua_esperada='en'):
     """Verifica se o texto está na língua esperada."""
     try:
         return detect(texto) == lingua_esperada
-    except:
+    except Exception as e:
+        logging.error(f"Erro ao detectar língua: {str(e)}")
         return False
 
 
@@ -65,7 +69,7 @@ def pdf_para_txt(caminho_pdf):
             for pagina in leitor.pages:
                 conteudo = pagina.extract_text() or ""
 
-                if len(conteudo.strip()) < 50:  # retorno - página com pouco texto com pouco texto
+                if len(conteudo.strip()) < 50:  # retorno - página com pouco texto
                     logging.warning(
                         f"Página possivelmente contém principalmente imagens: {caminho_pdf}")
 
@@ -78,7 +82,7 @@ def pdf_para_txt(caminho_pdf):
     return texto
 
 
-def limpar_texto(texto: str, preservar_palavras: set = None) -> str:
+def limpar_texto(texto: str, preservar_palavras: set = None) -> Tuple[str, str]:
     """
     Limpa e normaliza o texto, preservando palavras importantes.
 
@@ -153,7 +157,7 @@ def salvar_texto_em_arquivo(nome_arquivo: str, texto_limpo: str,
         with open(caminho_arquivo_limpo, 'w', encoding='utf-8') as f:
             f.write(texto_limpo)
 
-        # dalvando texto original
+        # salvando texto original
         caminho_arquivo_original = os.path.join(
             diretorio_saida_original, f"{nome_arquivo}_original.txt")
         with open(caminho_arquivo_original, 'w', encoding='utf-8') as f:
@@ -206,7 +210,6 @@ def processar_pdfs(diretorio_raiz: str,
             continue
 
         # criando backup antes de processar
-
         backup_dir = criar_backup(caminho_pdfs)
         estatisticas['por_classe'][classe] = {'processados': 0, 'falhas': 0}
 
@@ -246,7 +249,7 @@ def processar_pdfs(diretorio_raiz: str,
                     estatisticas['sucessos'] += 1
                     estatisticas['por_classe'][classe]['processados'] += 1
 
-             # salvando estatísticas detalhadas do texto
+            # salvando estatísticas detalhadas do texto
             stats_texto = {
                 'arquivo': arquivo,
                 'classe': classe,
@@ -257,7 +260,7 @@ def processar_pdfs(diretorio_raiz: str,
             }
 
             # bloco desativado
-            """"
+            """
             salvando em um DataFrame para análise posterior, caso for preciso
             df_stats = pd.DataFrame([stats_texto])
             stats_file = os.path.join(
