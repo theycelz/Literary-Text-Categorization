@@ -36,6 +36,9 @@ class ProcessadorVetorial:
             # vetorização TF-IDF
             X = self.vectorizer.fit_transform(textos)
 
+            # gerando relatório do vocabulário
+            self._analisar_vocabulario()
+
             # divisão estratificada
             X_train, X_test, y_train, y_test = train_test_split(
                 X, classes,
@@ -48,10 +51,7 @@ class ProcessadorVetorial:
             self._validar_balanceamento(y_train, y_test)
 
             # analisando esparsidade
-            self._analisar_esparsidade(X)
-
-            # gerando relatório do vocabulário
-            self._analisar_vocabulario()
+            self._analisar_esparsidade(X_train)
 
             return X_train, X_test, y_train, y_test
 
@@ -81,8 +81,8 @@ class ProcessadorVetorial:
 
     def _analisar_esparsidade(self, X) -> None:
         """Analisa a esparsidade da matriz TF-IDF."""
-        densidade = X.density * 100
-        elementos_nao_zero = X.getnnz()
+        densidade = (X.nnz / np.prod(X.shape)) * 100
+        elementos_nao_zero = X.nnz
 
         self.logger.info(
             f"Densidade da matriz: {densidade:.2f}%\n"
@@ -112,8 +112,6 @@ class ProcessadorVetorial:
     def visualizar_importancia_termos(self, n_termos: int = 20) -> None:
         """Visualiza os termos mais importantes do vocabulário."""
         try:
-            # calculando importância média dos termos
-            importancia = np.mean(self.vectorizer.idf_)
             termos = self.vectorizer.get_feature_names_out()
 
             # ordenando por importância
