@@ -113,6 +113,19 @@ class ClassificadorGeneros:
                               nome}: {str(e)}")
                 continue
 
+    def salvar_resultados(self, diretorio_saida: str = 'resultados'):
+        """
+        Salva os resultados em formato JSON e CSV.
+        """
+        os.makedirs(diretorio_saida, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        # salvando em  um json
+        caminho_json = os.path.join(
+            diretorio_saida, f'resultados_{timestamp}.json')
+        with open(caminho_json, 'w') as f:
+            json.dump(self.resultados, f, indent=4)
+
 
 def criar_diretorios_saida(diretorio_raiz):
     """Cria diretórios necessários para salvar as análises."""
