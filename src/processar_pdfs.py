@@ -78,28 +78,58 @@ def pdf_para_txt(caminho_pdf):
     return texto
 
 
-def limpar_texto(texto):
-    """Limpa e normaliza o texto."""
-    try:
-        # remove caracteres especiai, mantém apenas alfanuméricos e espaços
-        texto = re.sub(r'[^a-zA-Z0-9\s]', '', texto)
+def limpar_texto(texto: str, preservar_palavras: set = None) -> str:
+    """
+    Limpa e normaliza o texto, preservando palavras importantes.
 
-        # convertendo o texto para minúsculas
+    Args:
+        texto: Texto a ser limpo
+        preservar_palavras: Conjunto de palavras a serem preservadas mesmo que sejam stopwords
+    """
+    try:
+        # guardando o texto original para análise
+        texto_original = texto
+
+        # removendo caracteres especiais mas preservando alguns importantes para estilo
+        texto = re.sub(r'[^a-zA-Z0-9\s\-\'"]', ' ', texto)
+
+        # convertendo para minúsculas
         texto = texto.lower()
 
         # removendo múltiplos espaços
         texto = re.sub(r'\s+', ' ', texto)
 
-        # removendo stopwords
-        stop_words = set(stopwords.words('english'))
+        # tokenizando
         palavras = word_tokenize(texto)
-        palavras_limpa = [palavra for palavra in palavras if palavra.isalnum(
-        ) and palavra not in stop_words]
 
-        return " ".join(palavras_limpa)
+        # removendo stopwords, mas preservando palavras importantes
+        stop_words = set(stopwords.words('english'))
+        if preservar_palavras:
+            stop_words = stop_words - preservar_palavras
+
+        palavras_limpa = []
+        for palavra in palavras:
+            # mantenho palavras que não são stopwords ou que devem ser preservadas
+            if (palavra not in stop_words) or (preservar_palavras and palavra in preservar_palavras):
+                palavras_limpa.append(palavra)
+
+        texto_limpo = " ".join(palavras_limpa)
+
+        # registrando estatísticas de limpeza
+        stats = {
+            'palavras_originais': len(texto_original.split()),
+            'palavras_apos_limpeza': len(texto_limpo.split()),
+            'proporcao_mantida': len(texto_limpo.split()) /
+            len(texto_original.split()) if texto_original else 0
+        }
+
+        logging.info(f"Estatísticas de limpeza: {stats}")
+
+        return texto_limpo, texto_original
+
     except Exception as e:
         logging.error(f"Erro na limpeza do texto: {str(e)}")
-        return ""
+        return "", texto
 
 
 def salvar_texto_em_arquivo(nome_arquivo, texto_limpo, diretorio_raiz, classe):
