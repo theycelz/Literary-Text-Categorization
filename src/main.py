@@ -76,6 +76,24 @@ class ClassificadorGeneros:
             )
         }
 
+    def treinar_e_avaliar(self):
+        """
+        Treina e avalia cada classificador usando validação cruzada.
+        """
+        for nome, clf in self.classificadores.items():
+            logging.info(f"Iniciando treinamento do classificador: {nome}")
+
+            try:
+                cv_results = cross_validate(
+                    clf,
+                    self.X_train,
+                    self.y_train,
+                    cv=5,
+                    scoring=self.scoring,
+                    return_train_score=True,
+                    n_jobs=-1
+                )
+
 
 def criar_diretorios_saida(diretorio_raiz):
     """Cria diretórios necessários para salvar as análises."""
