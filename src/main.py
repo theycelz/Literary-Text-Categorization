@@ -7,6 +7,17 @@ from analise_textos import AnalisadorTextos
 import matplotlib.pyplot as plt
 import seaborn as sns
 from vetorizacao import ProcessadorVetorial
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.linear_model import LogisticRegression
+from sklearn.neural_network import MLPClassifier
+from sklearn.model_selection import cross_validate
+from sklearn.metrics import make_scorer, precision_score, recall_score, f1_score
+import json
+from datetime import datetime
+import pandas as pd
+from typing import Dict, Any
 
 
 def criar_diretorios_saida(diretorio_raiz):
