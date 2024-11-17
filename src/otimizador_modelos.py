@@ -43,3 +43,15 @@ class OtimizadorModelos:
             'recall_macro': make_scorer(recall_score, average='macro'),
             'f1_macro': make_scorer(f1_score, average='macro')
         }
+
+        # definindo dicionário para armazenar resultados
+        self.resultados = {}
+
+        # configurando grids de hiperparâmetros
+        self.param_grids = {
+            'DecisionTree': {
+                'max_depth': [5, 10, 15, 20],
+                'min_samples_split': [2, 5, 10],
+                'min_samples_leaf': [1, 2, 4],
+                'class_weight': [None, 'balanced']
+            },
