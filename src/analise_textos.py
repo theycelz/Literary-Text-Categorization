@@ -59,3 +59,20 @@ class AnalisadorTextos:
                 f.write(f"{palavra}: {freq}\n")
 
         return vocab_relevante
+
+    def analisar_caracteristicas_distintas(self, textos: List[str],
+                                           classes: List[str]) -> None:
+        """Analisa características distintivas por gênero."""
+        generos_unicos = set(classes)
+        vocab_por_genero = {}
+
+        # calculando vocabulário específico por gênero
+        for genero in generos_unicos:
+            textos_genero = [texto for texto, classe in zip(textos, classes)
+                             if classe == genero]
+            todas_palavras = []
+            for texto in textos_genero:
+                palavras = word_tokenize(texto.lower())
+                todas_palavras.extend(palavras)
+
+            vocab_por_genero[genero] = Counter(todas_palavras)
