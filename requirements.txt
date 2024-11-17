@@ -1,9 +1,19 @@
-PyPDF2
-nltk
-langdetect
-chardet
-sklearn
-pandas
-seaborn
-matplotlib
-numpy
+# Bibliotecas para processamento de PDFs
+PyPDF2  # Biblioteca para manipulação de arquivos PDF
+
+# Bibliotecas para processamento de linguagem natural (NLP)
+nltk  # Toolkit para processamento de linguagem natural
+langdetect  # Biblioteca para detecção de idioma
+
+# Biblioteca para detecção de encoding
+chardet  # Biblioteca para detecção de encoding de texto
+
+# Bibliotecas para aprendizado de máquina e análise de dados
+scikit-learn  # Biblioteca para aprendizado de máquina
+pandas  # Biblioteca para manipulação e análise de dados
+numpy  # Biblioteca para computação numérica
+scipy  # Biblioteca para computação científica
+
+# Bibliotecas para visualização de dados
+seaborn  # Biblioteca para visualização de dados baseada no matplotlib
+matplotlib  # Biblioteca para criação de gráficos e visualizações
