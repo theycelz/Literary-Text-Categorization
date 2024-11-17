@@ -16,3 +16,30 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
 import logging
 from scipy import stats
+
+
+class OtimizadorModelos:
+    def __init__(self, X_train, y_train, X_test, y_test, n_folds=10):
+        """
+        Inicializa o otimizador com dados de treino e teste.
+
+        Args:
+            X_train: features de treino
+            y_train: labels de treino
+            X_test: features de teste
+            y_test: lbels de teste
+            n_folds: número de folds para validação cruzada
+        """
+        self.X_train = X_train
+        self.y_train = y_train
+        self.X_test = X_test
+        self.y_test = y_test
+        self.n_folds = n_folds
+
+        # aqui estamos configurando métricas de avaliação
+        self.scoring = {
+            'accuracy': make_scorer(accuracy_score),
+            'precision_macro': make_scorer(precision_score, average='macro'),
+            'recall_macro': make_scorer(recall_score, average='macro'),
+            'f1_macro': make_scorer(f1_score, average='macro')
+        }
