@@ -180,9 +180,11 @@ def validar_texto(texto: str) -> Tuple[bool, str]:
     return True, "OK"
 
 
-def processar_pdfs(diretorio_raiz, diretorios_pdfs):
-    """Processa os PDFs com validações e logging."""
-    textos = []
+def processar_pdfs(diretorio_raiz: str,
+                   diretorios_pdfs: Dict[str, str]) -> Tuple[List[str], List[str], List[str]]:
+    """Processa os PDFs e retorna textos limpos, originais e classes."""
+    textos_limpos = []
+    textos_originais = []
     classes = []
     estatisticas = {
         'total_processado': 0,
@@ -191,14 +193,25 @@ def processar_pdfs(diretorio_raiz, diretorios_pdfs):
         'por_classe': {}
     }
 
+    # palavras importantes a serem preservadas por gênero, devem ser mantidas - definidas em dupla
+    palavras_preservar = {
+        'horror': {'fear', 'dark', 'blood', 'death', 'night', 'ghost', 'shadow'},
+        'poetry': {'love', 'heart', 'soul', 'dream', 'light', 'sky', 'wind'},
+        'romance': {'love', 'heart', 'kiss', 'smile', 'eyes', 'touch', 'feel'}
+    }
+
     for classe, caminho_pdfs in diretorios_pdfs.items():
         if not os.path.exists(caminho_pdfs):
             logging.error(f"Diretório não encontrado: {caminho_pdfs}")
             continue
 
         # criando backup antes de processar
+
         backup_dir = criar_backup(caminho_pdfs)
         estatisticas['por_classe'][classe] = {'processados': 0, 'falhas': 0}
+
+        # obtendo palavras a preservar para este gênero
+        preservar = palavras_preservar.get(classe, set())
 
         for arquivo in os.listdir(caminho_pdfs):
             if not arquivo.endswith('.pdf'):
@@ -211,7 +224,7 @@ def processar_pdfs(diretorio_raiz, diretorios_pdfs):
             # extraindo o texto
             texto_extraido = pdf_para_txt(caminho_arquivo_pdf)
 
-            #  validando o texto
+            # validando o texto
             valido, motivo = validar_texto(texto_extraido)
             if not valido:
                 logging.warning(f"Texto inválido em {arquivo}: {motivo}")
@@ -220,11 +233,15 @@ def processar_pdfs(diretorio_raiz, diretorios_pdfs):
                 continue
 
             # limpando e normalizando
-            texto_limpo = limpar_texto(texto_extraido)
+            texto_limpo, texto_original = limpar_texto(
+                texto_extraido, preservar)
+
             if texto_limpo:
                 nome_arquivo_txt = os.path.splitext(arquivo)[0]
-                if salvar_texto_em_arquivo(nome_arquivo_txt, texto_limpo, diretorio_raiz, classe):
-                    textos.append(texto_limpo)
+                if salvar_texto_em_arquivo(nome_arquivo_txt, texto_limpo,
+                                           texto_original, diretorio_raiz, classe):
+                    textos_limpos.append(texto_limpo)
+                    textos_originais.append(texto_original)
                     classes.append(classe)
                     estatisticas['sucessos'] += 1
                     estatisticas['por_classe'][classe]['processados'] += 1
