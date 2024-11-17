@@ -121,12 +121,12 @@ class ClassificadorGeneros:
         os.makedirs(diretorio_saida, exist_ok=True)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-        # salvando em  um json
+        # salvando em um json
         caminho_json = os.path.join(
             diretorio_saida, f'resultados_{timestamp}.json')
         with open(caminho_json, 'w') as f:
             json.dump(self.resultados, f, indent=4)
-        # convertendo para dataFrame e salvando em  um csv
+        # convertendo para DataFrame e salvando em um csv
         rows = []
         for clf_name, results in self.resultados.items():
             row = {'classificador': clf_name}
@@ -150,13 +150,13 @@ def criar_diretorios_saida(diretorio_raiz):
     for dir_nome in diretorios:
         caminho = os.path.join(diretorio_raiz, dir_nome)
         os.makedirs(caminho, exist_ok=True)
-    return {nome: os.path.join(diretorio_raiz, nome) for nome in diretorios}
+    return {nome: os.path.join(diretorio_raiz, nome) for nome em diretorios}
 
 
 def salvar_metricas_distribuicao(textos, classes, dir_graficos):
     """Salva gráficos e métricas sobre a distribuição dos textos."""
     # calculando a distribuição do tamanho dos textos por classe
-    tamanhos = [len(texto.split()) for texto in textos]
+    tamanhos = [len(texto.split()) for texto em textos]
     plt.figure(figsize=(10, 6))
     sns.boxplot(x=classes, y=tamanhos)
     plt.title('Distribuição do Tamanho dos Textos por Gênero')
@@ -192,19 +192,19 @@ def main():
         logging.info(
             f"Processamento concluído. Total de textos: {len(textos)}")
 
-        # 4. analise dos textos
+        # 4. análise dos textos
         analisador = AnalisadorTextos()
         analisador.analisar_distribuicao_tamanhos(textos, classes)
         vocab_relevante = analisador.analisar_vocabulario(textos, min_freq=5)
         analisador.analisar_caracteristicas_distintas(textos, classes)
 
         # 5. adicionando for para validação da limpeza
-        for i, (orig, limpo) in enumerate(zip(textos_originais, textos)):
+        for i, (orig, limpo) em enumerate(zip(textos_originais, textos)):
             if not analisador.validar_limpeza(orig, limpo):
                 logging.warning(
                     f"Possível limpeza excessiva detectada no texto {i+1}")
 
-        # 6. adicioanndo qvetorização e divisão dos dados
+        # 6. adicionando vetorização e divisão dos dados
         logging.info("Iniciando vetorização e divisão dos dados...")
         processador = ProcessadorVetorial(
             min_df=3,              # frequência mínima dos termos
