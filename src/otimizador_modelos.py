@@ -187,3 +187,47 @@ class OtimizadorModelos:
             plt.savefig(os.path.join(
                 diretorio_saida, 'comparacao_modelos.png'))
             plt.close()
+
+    def salvar_resultados(self, diretorio_saida: str = 'resultados'):
+        """Salva todos os resultados em formato JSON e CSV."""
+        os.makedirs(diretorio_saida, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        # preparando resultados para serialização
+        resultados_serializaveis = {}
+        for modelo, resultado in self.resultados.items():
+            resultados_serializaveis[modelo] = {
+                'melhores_params': resultado['melhores_params'],
+                'melhor_score': float(resultado['melhor_score']),
+                'scores_cv': {
+                    metric: {
+                        'mean': float(values['mean']),
+                        'std': float(values['std'])
+                    }
+                    for metric, values in resultado['scores_cv'].items()
+                }
+            }
+
+        # salvando em json
+        caminho_json = os.path.join(
+            diretorio_saida, f'resultados_otimizacao_{timestamp}.json')
+        with open(caminho_json, 'w') as f:
+            json.dump(resultados_serializaveis, f, indent=4)
+
+        # convertendo para dataframe e salvando em CSV
+        rows = []
+        for modelo, resultado in resultados_serializaveis.items():
+            row = {'modelo': modelo}
+            row.update(
+                {f'param_{k}': v for k, v in resultado['melhores_params'].items()})
+            for metric, values in resultado['scores_cv'].items():
+                row[f'{metric}_mean'] = values['mean']
+                row[f'{metric}_std'] = values['std']
+            rows.append(row)
+
+        df_resultados = pd.DataFrame(rows)
+        caminho_csv = os.path.join(
+            diretorio_saida, f'resultados_otimizacao_{timestamp}.csv')
+        df_resultados.to_csv(caminho_csv, index=False)
+
+        logging.info(f"Resultados salvos em {diretorio_saida}")
