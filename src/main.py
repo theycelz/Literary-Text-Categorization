@@ -41,6 +41,19 @@ class ClassificadorGeneros:
         # dicionário para armazenar resultados
         self.resultados = {}
 
+    def configurar_classificadores(self):
+        """
+        Configura os classificadores com hiperparâmetros iniciais conservadores
+        para evitar overfitting.
+        """
+        self.classificadores = {
+            'DecisionTree': DecisionTreeClassifier(
+                max_depth=10,
+                min_samples_split=5,
+                min_samples_leaf=2,
+                random_state=42
+            ),
+
 
 def criar_diretorios_saida(diretorio_raiz):
     """Cria diretórios necessários para salvar as análises."""
