@@ -20,6 +20,28 @@ import pandas as pd
 from typing import Dict, Any
 
 
+class ClassificadorGeneros:
+    def __init__(self, X_train, y_train, X_test, y_test):
+        """
+        Inicializa o classificador com os dados de treino e teste.
+        """
+        self.X_train = X_train
+        self.y_train = y_train
+        self.X_test = X_test
+        self.y_test = y_test
+
+        # definindo métricas para validação cruzada
+        self.scoring = {
+            'accuracy': 'accuracy',
+            'precision_macro': 'precision_macro',
+            'recall_macro': 'recall_macro',
+            'f1_macro': 'f1_macro'
+        }
+
+        # dicionário para armazenar resultados
+        self.resultados = {}
+
+
 def criar_diretorios_saida(diretorio_raiz):
     """Cria diretórios necessários para salvar as análises."""
     diretorios = ['analises', 'graficos', 'logs']
