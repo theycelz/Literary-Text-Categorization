@@ -78,12 +78,28 @@ class OtimizadorModelos:
         }
 
         def otimizar_modelo(self, nome_modelo: str, modelo, param_grid: Dict):
-        """
-        Otimiza um modelo usando GridSearchCV.
-        
-        Args:
-            nome_modelo: Nome do modelo
-            modelo: Instância do modelo
-            param_grid: Grid de hiperparâmetros
-        """
-        logging.info(f"Iniciando otimização do modelo: {nome_modelo}")
+            """
+            Otimiza um modelo usando GridSearchCV.
+
+            Args:
+                nome_modelo: Nome do modelo
+                modelo: Instância do modelo
+                param_grid: Grid de hiperparâmetros
+            """
+            logging.info(f"Iniciando otimização do modelo: {nome_modelo}")
+
+            try:
+                # configurando GridSsearchCV
+                grid_search = GridSearchCV(
+                    estimator=modelo,
+                    param_grid=param_grid,
+                    scoring=self.scoring,
+                    cv=self.n_folds,
+                    n_jobs=-1,
+                    refit='f1_macro',  # Usando F1 macro como métrica principal
+                    return_train_score=True,
+                    verbose=1
+                )
+
+            # realizando busca
+            grid_search.fit(self.X_train, self.y_train)
