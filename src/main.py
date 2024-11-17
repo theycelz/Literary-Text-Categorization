@@ -65,8 +65,6 @@ def salvar_metricas_distribuicao(textos, classes, dir_graficos):
 
 
 def main():
-   # logging para depuração
-
     logging.basicConfig(
         filename='processamento_completo.log',
         level=logging.INFO,
@@ -76,41 +74,59 @@ def main():
     try:
         # buscando o diretório raiz do projeto
         diretorio_raiz = os.path.dirname(os.path.abspath(__file__))
+        diretorios = criar_diretorios_saida(diretorio_raiz)
 
-        # subdiretórios de pdfs
+        # subdiretórios de PDFs
         diretorios_pdfs = {
             "horror": os.path.join(diretorio_raiz, "pdfsHorror"),
             "poetry": os.path.join(diretorio_raiz, "pdfsPoetry"),
             "romance": os.path.join(diretorio_raiz, "pdfsRomance")
         }
 
-        # processando pdfs
+        # processando PDFs
         logging.info("Iniciando processamento dos PDFs...")
-        textos, classes = processar_pdfs(diretorio_raiz, diretorios_pdfs)
+        textos, textos_originais, classes = processar_pdfs(
+            diretorio_raiz, diretorios_pdfs)
         logging.info(
             f"Processamento concluído. Total de textos: {len(textos)}")
+
+        # retornando análise dos textos
+        analisador = AnalisadorTextos()
+        analisador.analisar_distribuicao_tamanhos(
+            textos, classes)  # Salva gráficos
+        vocab_relevante = analisador.analisar_vocabulario(textos, min_freq=5)
+        analisador.analisar_caracteristicas_distintas(textos, classes)
+
+        # validando a limpeza
+        for i, (orig, limpo) in enumerate(zip(textos_originais, textos)):
+            if not analisador.validar_limpeza(orig, limpo):
+                logging.warning(
+                    f"Possível limpeza excessiva detectada no texto {i+1}")
 
         # criando matriz TF-IDF
         logging.info("Criando matriz TF-IDF...")
         vectorizer = TfidfVectorizer(
-            min_df=2,  # ignora termos que aparecem em menos de 2 documentos
-            max_df=0.95,  # ignora termos que aparecem em mais de 95% dos documentos
+            min_df=2,
+            max_df=0.95,
             stop_words='english'
         )
         X = vectorizer.fit_transform(textos)
         logging.info(f"Matriz TF-IDF criada. Dimensões: {X.shape}")
 
-        # gerando logs
-        log_vetores_e_vocabulario(vectorizer, X, textos)
+        # salvando análises e logs
+        log_vetores_e_vocabulario(vectorizer, X, textos, os.path.join(
+            diretorios['analises'], 'vocabulario_e_vetores.txt'))
+        salvar_metricas_distribuicao(
+            textos, classes, diretorios['graficos'])
 
-        # divisão dos dados
+        # divindo os dados
         X_train, X_test, y_train, y_test = train_test_split(
             X, classes, test_size=0.3, random_state=42, stratify=classes
         )
         logging.info("Divisão treino/teste realizada com sucesso")
 
-        #  informações sobre a divisão
-        with open('divisao_dados.log', 'w') as f:
+        # informações sobre a divisão
+        with open(os.path.join(diretorios['logs'], 'divisao_dados.log'), 'w') as f:
             f.write(f"Total de amostras: {len(classes)}\n")
             f.write(f"Amostras de treino: {len(y_train)}\n")
             f.write(f"Amostras de teste: {len(y_test)}\n")
