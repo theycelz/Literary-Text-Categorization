@@ -145,7 +145,7 @@ class ClassificadorGeneros:
 
 def criar_diretorios_saida(diretorio_raiz):
     """Cria diretórios necessários para salvar as análises."""
-    diretorios = ['analises', 'graficos', 'logs']
+    diretorios = ['analises', 'graficos', 'logs', 'resultados']
     for dir_nome in diretorios:
         caminho = os.path.join(diretorio_raiz, dir_nome)
         os.makedirs(caminho, exist_ok=True)
