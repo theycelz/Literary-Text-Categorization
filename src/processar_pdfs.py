@@ -166,12 +166,12 @@ def salvar_texto_em_arquivo(nome_arquivo: str, texto_limpo: str,
         return False
 
 
-def validar_texto(texto):
+def validar_texto(texto: str) -> Tuple[bool, str]:
     """Realiza validações no texto extraído."""
     if not texto.strip():
         return False, "Texto vazio"
 
-    if len(texto.split()) < 100:  # Texto muito curto
+    if len(texto.split()) < 100:
         return False, "Texto muito curto"
 
     if not verificar_lingua(texto):
