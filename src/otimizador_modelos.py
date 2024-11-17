@@ -101,28 +101,28 @@ class OtimizadorModelos:
                     verbose=1
                 )
 
-            # realizando busca
-            grid_search.fit(self.X_train, self.y_train)
+               # realizando busca
+                grid_search.fit(self.X_train, self.y_train)
 
-            # salvando os resultados
-            self.resultados[nome_modelo] = {
-                'melhores_params': grid_search.best_params_,
-                'melhor_score': grid_search.best_score_,
-                'scores_cv': {
-                    metric: {
-                        'mean': grid_search.cv_results_[f'mean_test_{metric}'][grid_search.best_index_],
-                        'std': grid_search.cv_results_[f'std_test_{metric}'][grid_search.best_index_]
-                    }
-                    for metric in self.scoring.keys()
-                },
-                'modelo_otimizado': grid_search.best_estimator_
-            }
+                # salvando os resultados
+                self.resultados[nome_modelo] = {
+                    'melhores_params': grid_search.best_params_,
+                    'melhor_score': grid_search.best_score_,
+                    'scores_cv': {
+                        metric: {
+                            'mean': grid_search.cv_results_[f'mean_test_{metric}'][grid_search.best_index_],
+                            'std': grid_search.cv_results_[f'std_test_{metric}'][grid_search.best_index_]
+                        }
+                        for metric in self.scoring.keys()
+                    },
+                    'modelo_otimizado': grid_search.best_estimator_
+                }
 
-            logging.info(f"Otimização concluída para {nome_modelo}")
+                logging.info(f"Otimização concluída para {nome_modelo}")
 
-        except Exception as e:
-            logging.error(f"Erro na otimização do modelo {
-                          nome_modelo}: {str(e)}")
+            except Exception as e:
+                logging.error(f"Erro na otimização do modelo {
+                    nome_modelo}: {str(e)}")
 
         def otimizar_todos_modelos(self):
             """Otimiza todos os modelos definidos."""
@@ -132,4 +132,25 @@ class OtimizadorModelos:
                 'NaiveBayes': MultinomialNB(),
                 'LogisticRegression': LogisticRegression(random_state=42),
                 'MLP': MLPClassifier(random_state=42, max_iter=1000)
+            }
+            for nome, modelo in modelos.items():
+                self.otimizar_modelo(nome, modelo, self.param_grids[nome])
+
+        def avaliar_significancia(self):
+            """Realiza teste estatístico para comparar modelos."""
+            scores = {}
+            for nome, resultado in self.resultados.items():
+                modelo = resultado['modelo_otimizado']
+                pred = modelo.predict(self.X_test)
+                scores[nome] = f1_score(self.y_test, pred, average='macro')
+
+            # Realizando teste de Friedman
+            nomes_modelos = list(scores.keys())
+            valores_f1 = list(scores.values())
+
+            _, p_value = stats.friedmanchisquare(*valores_f1)
+
+            return {
+                'scores': scores,
+                'p_value': p_value
             }
