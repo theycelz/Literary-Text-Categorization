@@ -120,3 +120,20 @@ def validar_limpeza(self, texto_original: str, texto_limpo: str) -> bool:
 
     # aferindo que se menos de 40% das palavras foram mantidas isso significa limpeza excessiva
     return proporcao_mantida >= 0.4
+
+
+def main(textos: List[str], classes: List[str], textos_originais: List[str]) -> None:
+    """Função principal para executar todas as análises."""
+    analisador = AnalisadorTextos()
+
+    # neste for, valido a limpeza
+    for texto_orig, texto_limpo in zip(textos_originais, textos):
+        if not analisador.validar_limpeza(texto_orig, texto_limpo):
+            logging.warning("Possível limpeza excessiva detectada")
+
+    # executando análises
+    analisador.analisar_distribuicao_tamanhos(textos, classes)
+    vocab_relevante = analisador.analisar_vocabulario(textos)
+    analisador.analisar_caracteristicas_distintas(textos, classes)
+
+    logging.info("Análise completa concluída com sucesso")
