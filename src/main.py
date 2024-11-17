@@ -125,6 +125,22 @@ class ClassificadorGeneros:
             diretorio_saida, f'resultados_{timestamp}.json')
         with open(caminho_json, 'w') as f:
             json.dump(self.resultados, f, indent=4)
+        # convertendo para dataFrame e salvando em  um csv
+        rows = []
+        for clf_name, results in self.resultados.items():
+            row = {'classificador': clf_name}
+            for metric, values in results['metricas'].items():
+                row[f'{metric}_media'] = values['media']
+                row[f'{metric}_std'] = values['desvio_padrao']
+            row['tempo_treino'] = results['tempo_treino']
+            rows.append(row)
+
+        df_resultados = pd.DataFrame(rows)
+        caminho_csv = os.path.join(
+            diretorio_saida, f'resultados_{timestamp}.csv')
+        df_resultados.to_csv(caminho_csv, index=False)
+
+        logging.info(f"Resultados salvos em {diretorio_saida}")
 
 
 def criar_diretorios_saida(diretorio_raiz):
