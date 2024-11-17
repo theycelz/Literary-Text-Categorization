@@ -34,3 +34,28 @@ class AnalisadorTextos:
         plt.close()
 
         self.logger.info("Análise de distribuição de tamanhos concluída")
+
+    def analisar_vocabulario(self, textos: List[str], min_freq: int = 5) -> Dict:
+        """Analisa o vocabulário e frequência dos termos."""
+        todas_palavras = []
+        for texto in textos:
+            palavras = word_tokenize(texto.lower())
+            todas_palavras.extend(palavras)
+
+        freq_palavras = Counter(todas_palavras)
+
+        # filtrando palavras com frequência mínima
+        vocab_relevante = {palavra: freq for palavra, freq in freq_palavras.items()
+                           if freq >= min_freq}
+
+        # aqui estamos salvando análise do vocabulário
+        with open('analise_vocabulario.txt', 'w', encoding='utf-8') as f:
+            f.write(f"Tamanho total do vocabulário: {len(freq_palavras)}\n")
+            f.write(f"Vocabulário relevante (freq >= {min_freq}): {
+                    len(vocab_relevante)}\n\n")
+            f.write("Top 100 palavras mais frequentes:\n")
+            for palavra, freq in sorted(vocab_relevante.items(),
+                                        key=lambda x: x[1], reverse=True)[:100]:
+                f.write(f"{palavra}: {freq}\n")
+
+        return vocab_relevante
