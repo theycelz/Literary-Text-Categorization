@@ -76,3 +76,35 @@ class AnalisadorTextos:
                 todas_palavras.extend(palavras)
 
             vocab_por_genero[genero] = Counter(todas_palavras)
+
+        # TODO: identificar palavras características por gênero
+        with open('caracteristicas_distintas.txt', 'w', encoding='utf-8') as f:
+            for genero in generos_unicos:
+                f.write(f"\nPalavras características do gênero {genero}:\n")
+                # comparando frequências relativas entre gêneros
+                palavras_caracteristicas = []
+                vocab_atual = vocab_por_genero[genero]
+
+                for palavra, freq in vocab_atual.items():
+                    freq_relativa_atual = freq / sum(vocab_atual.values())
+                    eh_caracteristica = True
+
+                    for outro_genero in generos_unicos:
+                        if outro_genero != genero:
+                            outro_vocab = vocab_por_genero[outro_genero]
+                            freq_outro = outro_vocab.get(palavra, 0)
+                            freq_relativa_outro = freq_outro / \
+                                sum(outro_vocab.values())
+
+                            if freq_relativa_outro >= freq_relativa_atual:
+                                eh_caracteristica = False
+                                break
+
+                    if eh_caracteristica and freq >= 5:  # filtrando palavras raras
+                        palavras_caracteristicas.append(
+                            (palavra, freq_relativa_atual))
+
+                # escrevendo top palavras características
+                for palavra, freq in sorted(palavras_caracteristicas,
+                                            key=lambda x: x[1], reverse=True)[:20]:
+                    f.write(f"{palavra}: {freq:.4f}\n")
