@@ -20,3 +20,17 @@ class AnalisadorTextos:
             'tamanho': tamanhos,
             'genero': classes
         })
+
+        # salvando algumas estatísticas básicas
+        estatisticas = df.groupby('genero')['tamanho'].describe()
+        estatisticas.to_csv('estatisticas_tamanho.csv')
+
+        # plotando distribuição
+        plt.figure(figsize=(10, 6))
+        sns.boxplot(x='genero', y='tamanho', data=df)
+        plt.title('Distribuição do Tamanho dos Textos por Gênero')
+        plt.ylabel('Número de Palavras')
+        plt.savefig('distribuicao_tamanhos.png')
+        plt.close()
+
+        self.logger.info("Análise de distribuição de tamanhos concluída")
