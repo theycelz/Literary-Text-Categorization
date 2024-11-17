@@ -18,11 +18,11 @@ def log_vetores_e_vocabulario(vectorizer, X, textos, caminho_arquivo="vocabulari
             f.write("=== Análise de Vocabulário e Vetores ===\n")
             f.write(f"Total de termos no vocabulário: {len(vocabulario)}\n\n")
 
-            # Amostra do vocabulário (primeiros 100 termos)
+            # amostra do vocabulário (primeiros 100 termos)
             f.write("Amostra do Vocabulário:\n")
             f.write(", ".join(vocabulario[:100]) + "...\n\n")
 
-            # Estatísticas por texto
+            # estatísticas por texto
             f.write("=== Estatísticas por Texto ===\n")
             for i, (texto, vetor) in enumerate(zip(textos, X_array)):
                 palavras_relevantes = [(vocabulario[idx], freq)
@@ -31,8 +31,8 @@ def log_vetores_e_vocabulario(vectorizer, X, textos, caminho_arquivo="vocabulari
                 palavras_relevantes.sort(key=lambda x: x[1], reverse=True)
 
                 f.write(f"\nTexto {i + 1}:\n")
-                f.write(f"Número de termos relevantes: {
-                        len(palavras_relevantes)}\n")
+                f.write(
+                    f"Número de termos relevantes: {len(palavras_relevantes)}\n")
                 f.write("Top 10 termos mais relevantes:\n")
                 for palavra, freq in palavras_relevantes[:10]:
                     f.write(f"  {palavra}: {freq:.4f}\n")
