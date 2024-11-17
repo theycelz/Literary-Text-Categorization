@@ -53,6 +53,14 @@ class ClassificadorGeneros:
                 min_samples_leaf=2,
                 random_state=42
             ),
+            'KNN': KNeighborsClassifier(
+                n_neighbors=5,
+                weights='uniform',
+                metric='cosine'
+            ),
+            'NaiveBayes': MultinomialNB(
+                alpha=1.0
+            ),
 
 
 def criar_diretorios_saida(diretorio_raiz):
