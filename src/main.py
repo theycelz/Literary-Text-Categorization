@@ -61,6 +61,20 @@ class ClassificadorGeneros:
             'NaiveBayes': MultinomialNB(
                 alpha=1.0
             ),
+            'LogisticRegression': LogisticRegression(
+                C=1.0,
+                max_iter=1000,
+                multi_class='multinomial',
+                random_state=42
+            ),
+            'MLP': MLPClassifier(
+                hidden_layer_sizes=(100,),
+                max_iter=300,
+                early_stopping=True,
+                validation_fraction=0.1,
+                random_state=42
+            )
+        }
 
 
 def criar_diretorios_saida(diretorio_raiz):
