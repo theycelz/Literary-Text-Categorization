@@ -77,116 +77,116 @@ class OtimizadorModelos:
             }
         }
 
-        def otimizar_modelo(self, nome_modelo: str, modelo, param_grid: Dict):
-            """
-            Otimiza um modelo usando GridSearchCV.
+    def otimizar_modelo(self, nome_modelo: str, modelo, param_grid: Dict):
+        """
+        Otimiza um modelo usando GridSearchCV.
 
-            Args:
-                nome_modelo: Nome do modelo
-                modelo: Instância do modelo
-                param_grid: Grid de hiperparâmetros
-            """
-            logging.info(f"Iniciando otimização do modelo: {nome_modelo}")
+        Args:
+            nome_modelo: Nome do modelo
+            modelo: Instância do modelo
+            param_grid: Grid de hiperparâmetros
+        """
+        logging.info(f"Iniciando otimização do modelo: {nome_modelo}")
 
-            try:
-                # configurando GridSsearchCV
-                grid_search = GridSearchCV(
-                    estimator=modelo,
-                    param_grid=param_grid,
-                    scoring=self.scoring,
-                    cv=self.n_folds,
-                    n_jobs=-1,
-                    refit='f1_macro',  # Usando F1 macro como métrica principal
-                    return_train_score=True,
-                    verbose=1
-                )
-
-               # realizando busca
-                grid_search.fit(self.X_train, self.y_train)
-
-                # salvando os resultados
-                self.resultados[nome_modelo] = {
-                    'melhores_params': grid_search.best_params_,
-                    'melhor_score': grid_search.best_score_,
-                    'scores_cv': {
-                        metric: {
-                            'mean': grid_search.cv_results_[f'mean_test_{metric}'][grid_search.best_index_],
-                            'std': grid_search.cv_results_[f'std_test_{metric}'][grid_search.best_index_]
-                        }
-                        for metric in self.scoring.keys()
-                    },
-                    'modelo_otimizado': grid_search.best_estimator_
-                }
-
-                logging.info(f"Otimização concluída para {nome_modelo}")
-
-            except Exception as e:
-                logging.error(f"Erro na otimização do modelo {
-                    nome_modelo}: {str(e)}")
-
-        def otimizar_todos_modelos(self):
-            """Otimiza todos os modelos definidos."""
-            modelos = {
-                'DecisionTree': DecisionTreeClassifier(random_state=42),
-                'KNN': KNeighborsClassifier(),
-                'NaiveBayes': MultinomialNB(),
-                'LogisticRegression': LogisticRegression(random_state=42),
-                'MLP': MLPClassifier(random_state=42, max_iter=1000)
-            }
-            for nome, modelo in modelos.items():
-                self.otimizar_modelo(nome, modelo, self.param_grids[nome])
-
-        def avaliar_significancia(self):
-            """Realiza teste estatístico para comparar modelos."""
-            scores = {}
-            for nome, resultado in self.resultados.items():
-                modelo = resultado['modelo_otimizado']
-                pred = modelo.predict(self.X_test)
-                scores[nome] = f1_score(self.y_test, pred, average='macro')
-
-            # Realizando teste de Friedman
-            nomes_modelos = list(scores.keys())
-            valores_f1 = list(scores.values())
-
-            _, p_value = stats.friedmanchisquare(*valores_f1)
-
-            return {
-                'scores': scores,
-                'p_value': p_value
-            }
-
-        def gerar_graficos_comparativos(self, diretorio_saida: str = 'resultados'):
-            """Gera gráficos comparativos entre os modelos."""
-            os.makedirs(diretorio_saida, exist_ok=True)
-
-            # preparando dados para visualização
-            metricas_df = []
-            for modelo, resultado in self.resultados.items():
-                for metrica, valores in resultado['scores_cv'].items():
-                    metricas_df.append({
-                        'modelo': modelo,
-                        'metrica': metrica,
-                        'valor': valores['mean'],
-                        'std': valores['std']
-                    })
-
-            df = pd.DataFrame(metricas_df)
-
-            # gerando gráfico de barras com erro
-            plt.figure(figsize=(12, 6))
-            sns.barplot(
-                data=df,
-                x='modelo',
-                y='valor',
-                hue='metrica',
-                capsize=0.1
+        try:
+            # configurando GridSsearchCV
+            grid_search = GridSearchCV(
+                estimator=modelo,
+                param_grid=param_grid,
+                scoring=self.scoring,
+                cv=self.n_folds,
+                n_jobs=-1,
+                refit='f1_macro',  # Usando F1 macro como métrica principal
+                return_train_score=True,
+                verbose=1
             )
-            plt.title('Comparação de Métricas entre Modelos')
-            plt.xticks(rotation=45)
-            plt.tight_layout()
-            plt.savefig(os.path.join(
-                diretorio_saida, 'comparacao_modelos.png'))
-            plt.close()
+
+            # realizando busca
+            grid_search.fit(self.X_train, self.y_train)
+
+            # salvando os resultados
+            self.resultados[nome_modelo] = {
+                'melhores_params': grid_search.best_params_,
+                'melhor_score': grid_search.best_score_,
+                'scores_cv': {
+                    metric: {
+                        'mean': grid_search.cv_results_[f'mean_test_{metric}'][grid_search.best_index_],
+                        'std': grid_search.cv_results_[f'std_test_{metric}'][grid_search.best_index_]
+                    }
+                    for metric in self.scoring.keys()
+                },
+                'modelo_otimizado': grid_search.best_estimator_
+            }
+
+            logging.info(f"Otimização concluída para {nome_modelo}")
+
+        except Exception as e:
+            logging.error(f"Erro na otimização do modelo {
+                          nome_modelo}: {str(e)}")
+
+    def otimizar_todos_modelos(self):
+        """Otimiza todos os modelos definidos."""
+        modelos = {
+            'DecisionTree': DecisionTreeClassifier(random_state=42),
+            'KNN': KNeighborsClassifier(),
+            'NaiveBayes': MultinomialNB(),
+            'LogisticRegression': LogisticRegression(random_state=42),
+            'MLP': MLPClassifier(random_state=42, max_iter=1000)
+        }
+        for nome, modelo in modelos.items():
+            self.otimizar_modelo(nome, modelo, self.param_grids[nome])
+
+    def avaliar_significancia(self):
+        """Realiza teste estatístico para comparar modelos."""
+        scores = {}
+        for nome, resultado in self.resultados.items():
+            modelo = resultado['modelo_otimizado']
+            pred = modelo.predict(self.X_test)
+            scores[nome] = f1_score(self.y_test, pred, average='macro')
+
+        # Realizando teste de Friedman
+        nomes_modelos = list(scores.keys())
+        valores_f1 = list(scores.values())
+
+        _, p_value = stats.friedmanchisquare(*[valores_f1])
+
+        return {
+            'scores': scores,
+            'p_value': p_value
+        }
+
+    def gerar_graficos_comparativos(self, diretorio_saida: str = 'resultados'):
+        """Gera gráficos comparativos entre os modelos."""
+        os.makedirs(diretorio_saida, exist_ok=True)
+
+        # preparando dados para visualização
+        metricas_df = []
+        for modelo, resultado in self.resultados.items():
+            for metrica, valores in resultado['scores_cv'].items():
+                metricas_df.append({
+                    'modelo': modelo,
+                    'metrica': metrica,
+                    'valor': valores['mean'],
+                    'std': valores['std']
+                })
+
+        df = pd.DataFrame(metricas_df)
+
+        # gerando gráfico de barras com erro
+        plt.figure(figsize=(12, 6))
+        sns.barplot(
+            data=df,
+            x='modelo',
+            y='valor',
+            hue='metrica',
+            capsize=0.1
+        )
+        plt.title('Comparação de Métricas entre Modelos')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(os.path.join(
+            diretorio_saida, 'comparacao_modelos.png'))
+        plt.close()
 
     def salvar_resultados(self, diretorio_saida: str = 'resultados'):
         """Salva todos os resultados em formato JSON e CSV."""
