@@ -246,6 +246,23 @@ def processar_pdfs(diretorio_raiz: str,
                     estatisticas['sucessos'] += 1
                     estatisticas['por_classe'][classe]['processados'] += 1
 
+             # salvando estatísticas detalhadas do texto
+            stats_texto = {
+                'arquivo': arquivo,
+                'classe': classe,
+                'tamanho_original': len(texto_original.split()) if texto_original else 0,
+                'tamanho_limpo': len(texto_limpo.split()) if texto_limpo else 0,
+                'proporcao_mantida': len(texto_limpo.split()) / len(texto_original.split())
+                if texto_original and texto_limpo else 0
+            }
+
+            # salvando em um DataFrame para análise posterior, caso for preciso
+            df_stats = pd.DataFrame([stats_texto])
+            stats_file = os.path.join(
+                diretorio_raiz, 'estatisticas_processamento.csv')
+            df_stats.to_csv(stats_file, mode='a', header=not os.path.exists(stats_file),
+                            index=False)
+
     # log final das estatísticas
     logging.info("=== Estatísticas de Processamento ===")
     logging.info(f"Total processado: {estatisticas['total_processado']}")
