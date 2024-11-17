@@ -209,7 +209,7 @@ def main():
             min_df=3,              # frequência mínima dos termos
             max_df=0.95,           # frequência máxima (%)
             ngram_range=(1, 2),    # uni e bigramas
-            max_features=10000     # tamanho máximo do vocabulário
+            max_features=100000     # tamanho máximo do vocabulário
         )
 
         # 7. realizando a vetorização e divisão
@@ -227,7 +227,14 @@ def main():
         salvar_metricas_distribuicao(
             textos, classes, diretorios['graficos'])
 
-        # 10. salvando informações sobre a divisão dos dados
+        # 10. treinamento e avaliação dos classificadores
+        logging.info("Iniciando treinamento dos classificadores...")
+        classificador = ClassificadorGeneros(X_train, y_train, X_test, y_test)
+        classificador.configurar_classificadores()
+        classificador.treinar_e_avaliar()
+        classificador.salvar_resultados(diretorios['resultados'])
+
+        # 11. salvando informações sobre a divisão dos dados
         with open(os.path.join(diretorios['logs'], 'divisao_dados.log'), 'w') as f:
             f.write("=== Informações sobre a Divisão dos Dados ===\n")
             f.write(f"Total de documentos: {len(classes)}\n")
@@ -236,8 +243,8 @@ def main():
             f.write(f"\nDimensões da matriz de treino: {X_train.shape}\n")
             f.write(f"Dimensões da matriz de teste: {X_test.shape}\n")
 
-        # 11. retornando os dados processados
-        return X_train, X_test, y_train, y_test, processador.vectorizer.get_feature_names_out()
+        # 12. retornando os dados processados e o classificador
+        return X_train, X_test, y_train, y_test, processador.vectorizer.get_feature_names_out(), classificador
 
     except Exception as e:
         logging.error(f"Erro durante a execução: {str(e)}")
@@ -246,7 +253,7 @@ def main():
 
 if __name__ == "__main__":
     try:
-        X_train, X_test, y_train, y_test, vocabulario = main()
+        X_train, X_test, y_train, y_test, vocabulario, classificador = main()
         logging.info("Pipeline completo executado com sucesso!")
     except Exception as e:
         logging.error(f"Erro na execução do script: {str(e)}")
