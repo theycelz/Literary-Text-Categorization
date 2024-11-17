@@ -93,6 +93,25 @@ class ClassificadorGeneros:
                     return_train_score=True,
                     n_jobs=-1
                 )
+                metricas = {
+                    metric: {
+                        'media': cv_results[f'test_{metric}'].mean(),
+                        'desvio_padrao': cv_results[f'test_{metric}'].std()
+                    }
+                    for metric in self.scoring.keys()
+                }
+
+                self.resultados[nome] = {
+                    'metricas': metricas,
+                    'tempo_treino': cv_results['fit_time'].mean()
+                }
+
+                logging.info(f"Treinamento concluído para {nome}")
+
+            except Exception as e:
+                logging.error(f"Erro no treinamento do classificador {
+                              nome}: {str(e)}")
+                continue
 
 
 def criar_diretorios_saida(diretorio_raiz):
