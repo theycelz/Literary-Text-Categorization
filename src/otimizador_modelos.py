@@ -69,3 +69,10 @@ class OtimizadorModelos:
                 'solver': ['lbfgs', 'newton-cg'],
                 'max_iter': [1000]
             },
+            'MLP': {
+                'hidden_layer_sizes': [(50,), (100,), (50, 50)],
+                'alpha': [0.0001, 0.001, 0.01],
+                'learning_rate': ['constant', 'adaptive'],
+                'early_stopping': [True]
+            }
+        }
