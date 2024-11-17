@@ -103,3 +103,23 @@ class OtimizadorModelos:
 
             # realizando busca
             grid_search.fit(self.X_train, self.y_train)
+
+            # salvando os resultados
+            self.resultados[nome_modelo] = {
+                'melhores_params': grid_search.best_params_,
+                'melhor_score': grid_search.best_score_,
+                'scores_cv': {
+                    metric: {
+                        'mean': grid_search.cv_results_[f'mean_test_{metric}'][grid_search.best_index_],
+                        'std': grid_search.cv_results_[f'std_test_{metric}'][grid_search.best_index_]
+                    }
+                    for metric in self.scoring.keys()
+                },
+                'modelo_otimizado': grid_search.best_estimator_
+            }
+
+            logging.info(f"Otimização concluída para {nome_modelo}")
+
+        except Exception as e:
+            logging.error(f"Erro na otimização do modelo {
+                          nome_modelo}: {str(e)}")
