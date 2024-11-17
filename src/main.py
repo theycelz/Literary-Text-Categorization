@@ -150,13 +150,13 @@ def criar_diretorios_saida(diretorio_raiz):
     for dir_nome in diretorios:
         caminho = os.path.join(diretorio_raiz, dir_nome)
         os.makedirs(caminho, exist_ok=True)
-    return {nome: os.path.join(diretorio_raiz, nome) for nome em diretorios}
+    return {nome: os.path.join(diretorio_raiz, nome) for nome in diretorios}
 
 
 def salvar_metricas_distribuicao(textos, classes, dir_graficos):
     """Salva gráficos e métricas sobre a distribuição dos textos."""
     # calculando a distribuição do tamanho dos textos por classe
-    tamanhos = [len(texto.split()) for texto em textos]
+    tamanhos = [len(texto.split()) for texto in textos]
     plt.figure(figsize=(10, 6))
     sns.boxplot(x=classes, y=tamanhos)
     plt.title('Distribuição do Tamanho dos Textos por Gênero')
@@ -199,7 +199,7 @@ def main():
         analisador.analisar_caracteristicas_distintas(textos, classes)
 
         # 5. adicionando for para validação da limpeza
-        for i, (orig, limpo) em enumerate(zip(textos_originais, textos)):
+        for i, (orig, limpo) in enumerate(zip(textos_originais, textos)):
             if not analisador.validar_limpeza(orig, limpo):
                 logging.warning(
                     f"Possível limpeza excessiva detectada no texto {i+1}")
