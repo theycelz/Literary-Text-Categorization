@@ -51,8 +51,7 @@ class AnalisadorTextos:
         # aqui estamos salvando análise do vocabulário
         with open('analise_vocabulario.txt', 'w', encoding='utf-8') as f:
             f.write(f"Tamanho total do vocabulário: {len(freq_palavras)}\n")
-            f.write(f"Vocabulário relevante (freq >= {min_freq}): {
-                    len(vocab_relevante)}\n\n")
+            f.write(f"Vocabulário relevante (freq >= {min_freq}): {len(vocab_relevante)}\n\n")
             f.write("Top 100 palavras mais frequentes:\n")
             for palavra, freq in sorted(vocab_relevante.items(),
                                         key=lambda x: x[1], reverse=True)[:100]:
