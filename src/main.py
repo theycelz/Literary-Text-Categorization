@@ -110,8 +110,7 @@ class ClassificadorGeneros:
                 logging.info(f"Treinamento concluído para {nome}")
 
             except Exception as e:
-                logging.error(f"Erro no treinamento do classificador {
-                              nome}: {str(e)}")
+                logging.error(f"Erro no treinamento do classificador {nome}: {str(e)}")
                 continue
 
     def salvar_resultados(self, diretorio_saida: str = 'resultados'):
