@@ -121,8 +121,7 @@ class OtimizadorModelos:
             logging.info(f"Otimização concluída para {nome_modelo}")
 
         except Exception as e:
-            logging.error(f"Erro na otimização do modelo {
-                          nome_modelo}: {str(e)}")
+            logging.error(f"Erro na otimização do modelo {nome_modelo}: {str(e)}")
 
     def otimizar_todos_modelos(self):
         """Otimiza todos os modelos definidos."""
