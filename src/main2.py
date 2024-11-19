@@ -34,19 +34,18 @@ from multiprocessing import Lock, Manager
 
 
 logging.basicConfig(
-    filename='processamento_completo.log',
-    level=logging.DEBUG,
-    format='%(asctime)s - %(levelname)s - %(funcName)s - %(message)s'
+    filename='processamento.log',
+    level=logging.INFO,
+    format='%(asctime)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
 )
-
-logger = logging.getLogger(__name__)
 
 STOP_WORDS = set(stopwords.words('english'))
 
 def processar_pdf(args):
     arquivo, classe, preservar_palavras, diretorio_raiz = args
     try:
-        logging.debug(f"Iniciando processamento do arquivo: {arquivo}", extra={'nome_funcao': 'processar_pdf'})
+        logging.info("Iniciando processamento")
         texto_extraido = pdf_para_txt(arquivo)
         valido, motivo = validar_texto(texto_extraido)
         if not valido:
@@ -56,10 +55,9 @@ def processar_pdf(args):
         if texto_limpo:
             nome_arquivo_txt = os.path.splitext(os.path.basename(arquivo))[0]
             if salvar_texto_em_arquivo(nome_arquivo_txt, texto_limpo, texto_original, diretorio_raiz, classe):
-                logging.debug(f"Arquivo salvo: {nome_arquivo_txt}.txt", extra={'nome_funcao': 'processar_pdf'})
                 return (texto_limpo, texto_original, classe)
     except Exception as e:
-        logging.error(f"Erro ao processar {arquivo}: {str(e)}", extra={'nome_funcao': 'processar_pdf'})
+        logging.error(f"Erro: {arquivo} - {str(e)}")
     return None
 
 def processar_pdfs(diretorio_raiz: str, diretorios_pdfs: Dict[str, str]):
