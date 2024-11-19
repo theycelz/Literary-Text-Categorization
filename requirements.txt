@@ -10,6 +10,7 @@ chardet  # Biblioteca para detecção de encoding de texto
 
 #Biblioteca para multiprocessamento  e deteccao
 multiprocessing
+wordcloud # Biblioteca para criação de nuvens de palavras
 
 # Bibliotecas para aprendizado de máquina e análise de dados
 scikit-learn  # Biblioteca para aprendizado de máquina
