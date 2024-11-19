@@ -9,7 +9,7 @@ langdetect  # Biblioteca para detecção de idioma
 chardet  # Biblioteca para detecção de encoding de texto
 
 #Biblioteca para multiprocessamento  e deteccao
-multiprocessing
+multiprocessing # Biblioteca para processamento paralelo
 wordcloud # Biblioteca para criação de nuvens de palavras
 
 # Bibliotecas para aprendizado de máquina e análise de dados
