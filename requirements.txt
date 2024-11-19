@@ -1,12 +1,15 @@
 # Bibliotecas para processamento de PDFs
 PyPDF2  # Biblioteca para manipulação de arquivos PDF
-
+pdfminer.six # Ferramenta para extrair texto de arquivos PDF
 # Bibliotecas para processamento de linguagem natural (NLP)
 nltk  # Toolkit para processamento de linguagem natural
 langdetect  # Biblioteca para detecção de idioma
 
 # Biblioteca para detecção de encoding
 chardet  # Biblioteca para detecção de encoding de texto
+
+#Biblioteca para multiprocessamento  e deteccao
+multiprocessing
 
 # Bibliotecas para aprendizado de máquina e análise de dados
 scikit-learn  # Biblioteca para aprendizado de máquina
