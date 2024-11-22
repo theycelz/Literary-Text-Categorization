@@ -634,64 +634,77 @@ def pdf_para_txt(caminho_pdf):
         return ""
 
 
-def limpar_texto(texto: str, preservar_palavras: set = None) -> Tuple[str, str]:
-
+def limpar_texto(texto: str, preservar_palavras: Set[str] = None) -> Tuple[str, str]:
+    """
+    Limpa e processa o texto com melhor tratamento de erros e logging mais detalhado.
+    """
     if not texto or not isinstance(texto, str):
-        logging.error("Texto inválido ou vazio")
+        logging.error(f"Texto inválido ou vazio: {type(texto)}")
         return "", ""
-        
+    
     try:
         texto_original = texto
         texto = texto.lower()
-        texto = ''.join(char for char in texto if ord(char) < 128)
-        texto = re.sub(r'[^a-zA-Z0-9\s\-\'"]', ' ', texto)
+        
+        # Remover caracteres não-ASCII de forma mais segura
+        texto = texto.encode('ascii', errors='ignore').decode()
+        
+        # Limpeza mais robusta
+        texto = re.sub(r'[^a-z0-9\s\-\'"]', ' ', texto)
         texto = re.sub(r'\s+', ' ', texto).strip()
         
-        # Tokenização com tratamento de erro
+        # Remover apóstrofos
+        texto = texto.replace("'", "")
+        
+        # Tokenização com fallback
+        palavras = []
         try:
             palavras = word_tokenize(texto)
         except Exception as e:
-            logging.warning(f"Erro na tokenização, usando split simples: {e}")
-            palavras = texto.split()
-            
-        # Preparar stopwords
+            logging.warning(f"Erro na tokenização, usando split simples: {str(e)}")
+            palavras = [palavra.strip() for palavra in texto.split() if palavra.strip()]
+        
+        # Preparar stopwords com verificação de tipo
         stop_words = STOP_WORDS.copy()
-        if preservar_palavras:
+        if preservar_palavras and isinstance(preservar_palavras, set):
             stop_words -= set(palavra.lower() for palavra in preservar_palavras)
-            
-        # Filtrar palavras
-        palavras_limpa = []
-        for palavra in palavras:
-            if len(palavra) < 2 or len(palavra) > 45:
-                continue
-            if not re.match(r'^[a-zA-Z\-\']+$', palavra):
-                continue
-            if palavra not in stop_words or (preservar_palavras and palavra in preservar_palavras):
-                palavras_limpa.append(palavra)
-                
+        
+        # Filtrar palavras com critérios mais precisos
+        palavras_limpa = [
+            palavra for palavra in palavras
+            if (2 <= len(palavra) <= 45 and
+                re.match(r'^[a-z\-\']+$', palavra) and
+                (palavra not in stop_words or
+                 (preservar_palavras and palavra in preservar_palavras)))
+        ]
+        
         texto_limpo = " ".join(palavras_limpa)
         
         if not texto_limpo:
             logging.warning("Texto ficou vazio após limpeza")
             return texto_original, texto_original
-            
+        
+        # Calcular estatísticas
+        palavras_originais = len([p for p in texto_original.split() if p.strip()])
+        palavras_final = len(palavras_limpa)
+        proporcao = palavras_final / palavras_originais if palavras_originais > 0 else 0
+        
         stats = {
-            'palavras_originais': len(texto_original.split()),
-            'palavras_apos_limpeza': len(palavras_limpa),
-            'proporcao_mantida': len(palavras_limpa) / len(texto_original.split()) if texto_original else 0
+            'palavras_originais': palavras_originais,
+            'palavras_apos_limpeza': palavras_final,
+            'proporcao_mantida': proporcao
         }
         
-        if stats['proporcao_mantida'] < 0.1:
-            logging.warning(f"Limpeza muito agressiva: manteve apenas {stats['proporcao_mantida']*100:.1f}% das palavras")
-            
+        if proporcao < 0.1:
+            logging.warning(f"Limpeza muito agressiva: manteve apenas {proporcao*100:.1f}% das palavras")
+        
         logging.info(f"Estatísticas de limpeza: {stats}")
         
         return texto_limpo, texto_original
-
+        
     except Exception as e:
         logging.error(f"Erro na limpeza do texto: {str(e)}")
-        texto_err = texto if isinstance(texto, str) else ""
-        return texto_err, texto_err
+        return texto if isinstance(texto, str) else "", texto if isinstance(texto, str) else ""
 
 
 def salvar_texto_em_arquivo(nome_arquivo: str, texto_limpo: str,
