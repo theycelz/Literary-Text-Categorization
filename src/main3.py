@@ -29,6 +29,7 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 from scipy import stats
 import numpy as np
 import chardet
+from math import ceil
 from multiprocessing import Lock, Manager
 from imblearn.over_sampling import SMOTE
 from imblearn.under_sampling import RandomUnderSampler
@@ -901,46 +902,38 @@ class ProcessadorVetorial:
         Aplica balanceamento adaptativo para garantir distribuição igual entre classes.
         """
         try:
-            # Calculando a distribuição atual
             contagem_classes = Counter(y)
 
-            # Determinando o tamanho alvo para cada classe
-            # Para garantir balanceamento perfeito, usamos o número médio de amostras
-            n_classes = len(contagem_classes)
-            tamanho_alvo = sum(contagem_classes.values()) // n_classes
+            # MODIFICAÇÃO 1: Usar ceil em vez de divisão inteira
+            tamanho_alvo = ceil(
+                sum(contagem_classes.values()) / len(contagem_classes))
 
-            # Configurando estratégia de balanceamento adaptativa
+            # MODIFICAÇÃO 2: Garantir que o tamanho alvo não seja menor que a maior classe
+            tamanho_alvo = max(tamanho_alvo, max(contagem_classes.values()))
+
             strategy = {
                 classe: tamanho_alvo for classe in contagem_classes.keys()}
 
-            # Pipeline de balanceamento adaptativo
-            over = SMOTE(
+            # MODIFICAÇÃO 3: Aplicar apenas SMOTE primeiro
+            smote = SMOTE(
                 sampling_strategy=strategy,
                 random_state=random_state,
-                # Adapta k_neighbors
                 k_neighbors=min(5, min(contagem_classes.values())-1)
             )
 
-            under = RandomUnderSampler(
-                sampling_strategy=strategy,
-                random_state=random_state
-            )
+            X_bal, y_bal = smote.fit_resample(X, y)
 
-            pipeline = ImbPipeline([
-                ('over', over),
-                ('under', under)
-            ])
+            # MODIFICAÇÃO 4: Só aplicar under sampling se necessário
+            if len(y_bal) > tamanho_alvo * len(contagem_classes):
+                under = RandomUnderSampler(
+                    sampling_strategy=strategy,
+                    random_state=random_state
+                )
+                X_bal, y_bal = under.fit_resample(X_bal, y_bal)
 
-            X_bal, y_bal = pipeline.fit_resample(X, y)
-
-            # Verificação final do balanceamento
-            contagem_final = Counter(y_bal)
-            proporcoes = {classe: (count/len(y_bal))*100
-                          for classe, count in contagem_final.items()}
-
-            self.logger.info("Balanceamento final alcançado:")
-            for classe, prop in proporcoes.items():
-                self.logger.info(f"Classe {classe}: {prop:.1f}%")
+            self.logger.info(f"Contagem original: {contagem_classes}")
+            self.logger.info(f"Tamanho alvo: {tamanho_alvo}")
+            self.logger.info(f"Estratégia: {strategy}")
 
             return X_bal, y_bal
 
