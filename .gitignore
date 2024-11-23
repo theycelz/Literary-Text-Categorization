@@ -168,3 +168,4 @@ analise_vocabulario.txt
 caracteristicas_distintas.txt
 *.csv
 *.prof
+*.sh
