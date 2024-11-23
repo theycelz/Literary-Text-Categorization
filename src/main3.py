@@ -41,6 +41,7 @@ logging.basicConfig(
 
 STOP_WORDS = set(stopwords.words('english'))
 
+
 def processar_pdf(args):
     arquivo, classe, preservar_palavras, diretorio_raiz = args
     try:
@@ -48,9 +49,11 @@ def processar_pdf(args):
         texto_extraido = pdf_para_txt(arquivo)
         valido, motivo = validar_texto(texto_extraido)
         if not valido:
-            logging.warning(f"Texto inválido em {arquivo}: {motivo}", extra={'nome_funcao': 'processar_pdf'})
+            logging.warning(f"Texto inválido em {arquivo}: {motivo}", extra={
+                            'nome_funcao': 'processar_pdf'})
             return None
-        texto_limpo, texto_original = limpar_texto(texto_extraido, preservar_palavras)
+        texto_limpo, texto_original = limpar_texto(
+            texto_extraido, preservar_palavras)
         if texto_limpo:
             nome_arquivo_txt = os.path.splitext(os.path.basename(arquivo))[0]
             if salvar_texto_em_arquivo(nome_arquivo_txt, texto_limpo, texto_original, diretorio_raiz, classe):
@@ -59,14 +62,16 @@ def processar_pdf(args):
         logging.error(f"Erro: {arquivo} - {str(e)}")
     return None
 
+
 def processar_pdfs(diretorio_raiz: str, diretorios_pdfs: Dict[str, str]):
     if not os.path.isdir(diretorio_raiz):
         raise ValueError(f"Diretório raiz inválido: {diretorio_raiz}")
-    
+
     for classe, caminho in diretorios_pdfs.items():
         if not os.path.isdir(caminho):
-            raise ValueError(f"Diretório inválido para classe {classe}: {caminho}")
-            
+            raise ValueError(
+                f"Diretório inválido para classe {classe}: {caminho}")
+
     if not diretorios_pdfs:
         raise ValueError("Nenhum diretório de PDFs fornecido")
     textos_limpos = []
@@ -82,8 +87,9 @@ def processar_pdfs(diretorio_raiz: str, diretorios_pdfs: Dict[str, str]):
             for classe in diretorios_pdfs.keys()
         })
     })
-    
+
     lock = Lock()
+
     def atualizar_estatisticas(resultado, classe):
         with lock:
             if resultado:
@@ -103,9 +109,11 @@ def processar_pdfs(diretorio_raiz: str, diretorios_pdfs: Dict[str, str]):
     # Coletando todas os PDFs para processamento
     tarefas = []
     for classe, caminho_pdfs in diretorios_pdfs.items():
-        arquivos_pdf = [os.path.join(caminho_pdfs, f) for f in os.listdir(caminho_pdfs) if f.endswith('.pdf')]
+        arquivos_pdf = [os.path.join(caminho_pdfs, f) for f in os.listdir(
+            caminho_pdfs) if f.endswith('.pdf')]
         for arquivo_pdf in arquivos_pdf:
-            tarefas.append((arquivo_pdf, classe, palavras_preservar_dict.get(classe, set()), diretorio_raiz))
+            tarefas.append((arquivo_pdf, classe, palavras_preservar_dict.get(
+                classe, set()), diretorio_raiz))
 
     # Processando PDFs em paralelo
     with multiprocessing.Pool(processes=multiprocessing.cpu_count()) as pool:
@@ -148,7 +156,7 @@ def processar_pdfs(diretorio_raiz: str, diretorios_pdfs: Dict[str, str]):
         raise ValueError("Nenhum texto foi extraído com sucesso.")
 
     return textos_limpos, textos_originais, classes
-    
+
 
 class AnalisadorTextos:
     def __init__(self):
@@ -192,7 +200,8 @@ class AnalisadorTextos:
         # Salvando análise do vocabulário
         with open('analise_vocabulario.txt', 'w', encoding='utf-8') as f:
             f.write(f"Tamanho total do vocabulário: {len(freq_palavras)}\n")
-            f.write(f"Vocabulário relevante (freq >= {min_freq}): {len(vocab_relevante)}\n\n")
+            f.write(
+                f"Vocabulário relevante (freq >= {min_freq}): {len(vocab_relevante)}\n\n")
             f.write("Top 100 palavras mais frequentes:\n")
             for palavra, freq in sorted(vocab_relevante.items(),
                                         key=lambda x: x[1], reverse=True)[:100]:
@@ -232,7 +241,8 @@ class AnalisadorTextos:
                         if outro_genero != genero:
                             outro_vocab = vocab_por_genero[outro_genero]
                             freq_outro = outro_vocab.get(palavra, 0)
-                            freq_relativa_outro = freq_outro / sum(outro_vocab.values())
+                            freq_relativa_outro = freq_outro / \
+                                sum(outro_vocab.values())
 
                             if freq_relativa_outro >= freq_relativa_atual:
                                 eh_caracteristica = False
@@ -253,10 +263,27 @@ class AnalisadorTextos:
         palavras_limpas = set(word_tokenize(texto_limpo.lower()))
 
         # Calculando proporção de palavras mantidas
-        proporcao_mantida = len(palavras_limpas) / len(palavras_originais) if palavras_originais else 0
+        proporcao_mantida = len(
+            palavras_limpas) / len(palavras_originais) if palavras_originais else 0
 
         # Aferindo que se menos de 40% das palavras forem mantidas, significa limpeza excessiva
         return proporcao_mantida >= 0.4
+
+    def gerar_wordcloud(self, vocabulario: Dict[str, int]) -> None:
+        """Gera e plota uma Word Cloud do vocabulário."""
+        # Frequência das palavras no vocabulário
+        freq_palavras = Counter(vocabulario)
+
+        # Gerar Word Cloud
+        wordcloud = WordCloud(
+            width=800, height=400, background_color='white').generate_from_frequencies(freq_palavras)
+
+        plt.figure(figsize=(15, 7.5))
+        plt.imshow(wordcloud, interpolation='bilinear')
+        plt.axis('off')
+        plt.title('Word Cloud do Vocabulário')
+        plt.show()
+
 
 class ClassificadorGeneros:
     def __init__(self, X_train, y_train, X_test, y_test):
@@ -267,9 +294,9 @@ class ClassificadorGeneros:
 
         self.scoring = {
             'accuracy': 'accuracy',
-            'precision_macro': make_scorer(precision_score, average='macro', zero_division=0),
-            'recall_macro': make_scorer(recall_score, average='macro', zero_division=0),
-            'f1_macro': make_scorer(f1_score, average='macro', zero_division=0)
+            'precision_macro': make_scorer(precision_score, average='macro', zero_division=1),
+            'recall_macro': make_scorer(recall_score, average='macro', zero_division=1),
+            'f1_macro': make_scorer(f1_score, average='macro', zero_division=1)
         }
 
         self.resultados = {}
@@ -342,7 +369,8 @@ class ClassificadorGeneros:
                 logging.info(f"Treinamento concluído para {nome}")
 
             except Exception as e:
-                logging.error(f"Erro no treinamento do classificador {nome}: {str(e)}")
+                logging.error(
+                    f"Erro no treinamento do classificador {nome}: {str(e)}")
                 continue
 
     def salvar_resultados(self, diretorio_saida: str = 'resultados'):
@@ -374,6 +402,7 @@ class ClassificadorGeneros:
 
         logging.info(f"Resultados salvos em {diretorio_saida}")
 
+
 class OtimizadorModelos:
     def __init__(self, X_train, y_train, X_test, y_test, n_folds=10):
         """
@@ -388,9 +417,9 @@ class OtimizadorModelos:
         # Configurando métricas de avaliação
         self.scoring = {
             'accuracy': make_scorer(accuracy_score),
-            'precision_macro': make_scorer(precision_score, average='macro'),
-            'recall_macro': make_scorer(recall_score, average='macro'),
-            'f1_macro': make_scorer(f1_score, average='macro')
+            'precision_macro': make_scorer(precision_score, average='macro', zero_division=1),
+            'recall_macro': make_scorer(recall_score, average='macro', zero_division=1),
+            'f1_macro': make_scorer(f1_score, average='macro', zero_division=1)
         }
 
         # Dicionário para armazenar resultados
@@ -465,7 +494,8 @@ class OtimizadorModelos:
             logging.info(f"Otimização concluída para {nome_modelo}")
 
         except Exception as e:
-            logging.error(f"Erro na otimização do modelo {nome_modelo}: {str(e)}")
+            logging.error(
+                f"Erro na otimização do modelo {nome_modelo}: {str(e)}")
 
     def otimizar_todos_modelos(self):
         """Otimiza todos os modelos definidos."""
@@ -483,20 +513,20 @@ class OtimizadorModelos:
         """Realiza teste estatístico para comparar modelos."""
         if len(self.resultados) < 2:
             raise ValueError("Necessário pelo menos 2 modelos para comparação")
-            
+
         scores = {}
         scores_array = []
-        
+
         for nome, resultado in self.resultados.items():
             modelo = resultado['modelo_otimizado']
             pred = modelo.predict(self.X_test)
             score = f1_score(self.y_test, pred, average='macro')
             scores[nome] = score
             scores_array.append(score)
-        
+
         scores_array = np.array(scores_array)
         statistic, p_value = stats.friedmanchisquare(scores_array)
-        
+
         return {
             'scores': scores,
             'statistic': float(statistic),
@@ -580,13 +610,16 @@ class OtimizadorModelos:
 
         logging.info(f"Resultados salvos em {diretorio_saida}")
 
+
 def criar_diretorios_saida(diretorio_raiz):
     """Cria diretórios necessários para salvar as análises."""
-    diretorios = ['analises', 'graficos', 'logs', 'resultados', 'textos_extraidos']
+    diretorios = ['analises', 'graficos',
+                  'logs', 'resultados', 'textos_extraidos']
     for dir_nome in diretorios:
         caminho = os.path.join(diretorio_raiz, dir_nome)
         os.makedirs(caminho, exist_ok=True)
     return {nome: os.path.join(diretorio_raiz, nome) for nome in diretorios}
+
 
 def salvar_metricas_distribuicao(textos, classes, dir_graficos):
     """Salva gráficos e métricas sobre a distribuição dos textos."""
@@ -600,10 +633,12 @@ def salvar_metricas_distribuicao(textos, classes, dir_graficos):
     plt.savefig(os.path.join(dir_graficos, 'distribuicao_tamanhos.png'))
     plt.close()
 
+
 def detectar_encoding(texto_bytes):
     """Detecta o encoding do texto."""
     resultado = chardet.detect(texto_bytes)
     return resultado['encoding']
+
 
 def verificar_lingua(texto, lingua_esperada='en'):
     """Verifica se o texto está na língua esperada."""
@@ -613,12 +648,13 @@ def verificar_lingua(texto, lingua_esperada='en'):
         logging.error(f"Erro ao detectar língua: {str(e)}")
         return False
 
+
 def pdf_para_txt(caminho_pdf):
     """Extrai texto do PDF usando pdfminer.six com verificações adicionais."""
     if not os.path.exists(caminho_pdf):
         logging.error(f"Arquivo não encontrado: {caminho_pdf}")
         return ""
-        
+
     try:
         texto = extract_text(caminho_pdf)
         if not texto or not texto.strip():
@@ -637,34 +673,37 @@ def limpar_texto(texto: str, preservar_palavras: set[str] = None) -> Tuple[str, 
     if not texto or not isinstance(texto, str):
         logging.error(f"Texto inválido ou vazio: {type(texto)}")
         return "", ""
-    
+
     try:
         texto_original = texto
         texto = texto.lower()
-        
+
         # Remover caracteres não-ASCII de forma mais segura
         texto = texto.encode('ascii', errors='ignore').decode()
-        
+
         # Limpeza mais robusta
         texto = re.sub(r'[^a-z0-9\s\-\'"]', ' ', texto)
         texto = re.sub(r'\s+', ' ', texto).strip()
-        
+
         # Remover apóstrofos
         texto = texto.replace("'", "")
-        
+
         # Tokenização com fallback
         palavras = []
         try:
             palavras = word_tokenize(texto)
         except Exception as e:
-            logging.warning(f"Erro na tokenização, usando split simples: {str(e)}")
-            palavras = [palavra.strip() for palavra in texto.split() if palavra.strip()]
-        
+            logging.warning(
+                f"Erro na tokenização, usando split simples: {str(e)}")
+            palavras = [palavra.strip()
+                        for palavra in texto.split() if palavra.strip()]
+
         # Preparar stopwords com verificação de tipo
         stop_words = STOP_WORDS.copy()
         if preservar_palavras and isinstance(preservar_palavras, set):
-            stop_words -= set(palavra.lower() for palavra in preservar_palavras)
-        
+            stop_words -= set(palavra.lower()
+                              for palavra in preservar_palavras)
+
         # Filtrar palavras com critérios mais precisos
         palavras_limpa = [
             palavra for palavra in palavras
@@ -673,55 +712,57 @@ def limpar_texto(texto: str, preservar_palavras: set[str] = None) -> Tuple[str, 
                 (palavra not in stop_words or
                  (preservar_palavras and palavra in preservar_palavras)))
         ]
-        
+
         texto_limpo = " ".join(palavras_limpa)
-        
+
         if not texto_limpo:
             logging.warning("Texto ficou vazio após limpeza")
             return texto_original, texto_original
-        
+
         # Calcular estatísticas
-        palavras_originais = len([p for p in texto_original.split() if p.strip()])
+        palavras_originais = len(
+            [p for p in texto_original.split() if p.strip()])
         palavras_final = len(palavras_limpa)
         proporcao = palavras_final / palavras_originais if palavras_originais > 0 else 0
-        
+
         stats = {
             'palavras_originais': palavras_originais,
             'palavras_apos_limpeza': palavras_final,
             'proporcao_mantida': proporcao
         }
-        
+
         if proporcao < 0.1:
-            logging.warning(f"Limpeza muito agressiva: manteve apenas {proporcao*100:.1f}% das palavras")
-        
+            logging.warning(
+                f"Limpeza muito agressiva: manteve apenas {proporcao*100:.1f}% das palavras")
+
         logging.info(f"Estatísticas de limpeza: {stats}")
-        
+
         return texto_limpo, texto_original
-        
+
     except Exception as e:
         logging.error(f"Erro na limpeza do texto: {str(e)}")
         return texto if isinstance(texto, str) else "", texto if isinstance(texto, str) else ""
 
 
 def salvar_texto_em_arquivo(nome_arquivo: str, texto_limpo: str,
-                          texto_original: str, diretorio_raiz: str,
-                          classe: str) -> bool:
+                            texto_original: str, diretorio_raiz: str,
+                            classe: str) -> bool:
     try:
         # Criar diretórios com verificação
         diretorio_saida_limpo = os.path.join(
             diretorio_raiz, "textos_extraidos", classe, "limpos")
         diretorio_saida_original = os.path.join(
             diretorio_raiz, "textos_extraidos", classe, "originais")
-        
+
         os.makedirs(diretorio_saida_limpo, exist_ok=True)
         os.makedirs(diretorio_saida_original, exist_ok=True)
 
         # Salvar com context managers
-        with open(os.path.join(diretorio_saida_limpo, f"{nome_arquivo}.txt"), 
+        with open(os.path.join(diretorio_saida_limpo, f"{nome_arquivo}.txt"),
                   'w', encoding='utf-8') as f:
             f.write(texto_limpo)
 
-        with open(os.path.join(diretorio_saida_original, f"{nome_arquivo}_original.txt"), 
+        with open(os.path.join(diretorio_saida_original, f"{nome_arquivo}_original.txt"),
                   'w', encoding='utf-8') as f:
             f.write(texto_original)
 
@@ -729,6 +770,7 @@ def salvar_texto_em_arquivo(nome_arquivo: str, texto_limpo: str,
     except Exception as e:
         logging.error(f"Erro ao salvar arquivo {nome_arquivo}: {str(e)}")
         return False
+
 
 def validar_texto(texto: str) -> Tuple[bool, str]:
     """Realiza validações no texto extraído."""
@@ -742,6 +784,7 @@ def validar_texto(texto: str) -> Tuple[bool, str]:
         return False, "Idioma incorreto"
 
     return True, "OK"
+
 
 class ProcessadorVetorial:
     def __init__(self,
@@ -757,7 +800,6 @@ class ProcessadorVetorial:
             stop_words='english'
         )
         self.logger = logging.getLogger(__name__)
-
 
     def vetorizar_e_dividir(self,
                             textos: List[str],
@@ -787,6 +829,11 @@ class ProcessadorVetorial:
 
             # Analisando esparsidade
             self._analisar_esparsidade(X_train)
+
+            # Deve ser (n_textos_treino, n_palavras)
+            print(f"Tamanho da matriz BoW (Treino): {X_train.shape}")
+            # Deve ser (n_textos_teste, n_palavras)
+            print(f"Tamanho da matriz BoW (Teste): {X_test.shape}")
 
             return X_train, X_test, y_train, y_test
 
@@ -866,8 +913,9 @@ class ProcessadorVetorial:
         except Exception as e:
             self.logger.error(f"Erro na visualização: {str(e)}")
 
-def gerar_textos(diretorios_pdfs: Dict[str, str], 
-                 palavras_preservar: Dict[str, set], 
+
+def gerar_textos(diretorios_pdfs: Dict[str, str],
+                 palavras_preservar: Dict[str, set],
                  tamanho_chunk: int = 1000):
     for classe, caminho_pdfs in diretorios_pdfs.items():
         arquivos = [f for f in os.listdir(caminho_pdfs) if f.endswith('.pdf')]
@@ -880,6 +928,7 @@ def gerar_textos(diretorios_pdfs: Dict[str, str],
                     classe,
                     palavras_preservar.get(classe, set())
                 )
+
 
 def main_process():
     """Função principal para executar todas as análises com profiling."""
@@ -906,6 +955,7 @@ def main_process():
         analisador = AnalisadorTextos()
         analisador.analisar_distribuicao_tamanhos(textos, classes)
         vocab_relevante = analisador.analisar_vocabulario(textos, min_freq=5)
+        analisador.gerar_wordcloud(vocab_relevante)
         analisador.analisar_caracteristicas_distintas(textos, classes)
 
         logging.info("Iniciando vetorização e divisão dos dados...")
@@ -951,7 +1001,8 @@ def main_process():
         logging.info("Iniciando otimização dos modelos...")
         otimizador = OtimizadorModelos(X_train, y_train, X_test, y_test)
         otimizador.otimizar_todos_modelos()
-        otimizador.gerar_graficos_comparativos(diretorio_saida=diretorios['resultados'])
+        otimizador.gerar_graficos_comparativos(
+            diretorio_saida=diretorios['resultados'])
         otimizador.salvar_resultados(diretorio_saida=diretorios['resultados'])
         resultados_significancia = otimizador.avaliar_significancia()
 
@@ -968,9 +1019,11 @@ def main_process():
     finally:
         profiler.disable()
         stats = pstats.Stats(profiler).strip_dirs().sort_stats('cumtime')
-        stats_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'profiling.prof')
+        stats_file = os.path.join(os.path.dirname(
+            os.path.abspath(__file__)), 'profiling.prof')
         stats.dump_stats(stats_file)
         logging.info(f"Profiling salvo em {stats_file}")
+
 
 if __name__ == "__main__":
     import nltk
