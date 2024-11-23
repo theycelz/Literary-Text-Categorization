@@ -461,6 +461,7 @@ class OtimizadorModelos:
         self.X_test = X_test
         self.y_test = y_test
         self.n_folds = obter_minimo_folds(y_train, desired_folds)
+        self.logger = logging.getLogger(__name__)
 
         if self.n_folds < 2:
             logging.error(
@@ -551,48 +552,52 @@ class OtimizadorModelos:
             self.otimizar_modelo(nome, modelo, self.param_grids.get(nome, {}))
 
     def avaliar_significancia(self):
-        """Realiza o teste de Friedman para avaliar a significância estatística entre os modelos."""
+        """Realiza o teste de Friedman com número igual de amostras."""
         try:
             metricas = ['accuracy', 'precision_macro',
                         'recall_macro', 'f1_macro']
             dados = {metrica: [] for metrica in metricas}
             modelos = list(self.resultados.keys())
 
-            for metrica in metricas:
-                for modelo in modelos:
-                    dados[metrica].append(
-                        self.resultados[modelo]['cv_results'][f'mean_test_{metrica}'])
+            # Encontrar o menor número de amostras entre todos os modelos
+            min_samples = float('inf')
+            for modelo in modelos:
+                for metrica in metricas:
+                    scores = self.resultados[modelo]['cv_results'][f'mean_test_{metrica}']
+                    min_samples = min(min_samples, len(scores))
 
-            # Verificar se há pelo menos 3 modelos
-            if len(modelos) < 3:
-                logging.error(
-                    "Erro durante a execução: At least 3 models must be compared for Friedman test, got fewer.")
+            # Coletar scores com mesmo tamanho
+            scores_padronizados = []
+            for modelo in modelos:
+                modelo_scores = []
+                for metrica in metricas:
+                    scores = self.resultados[modelo]['cv_results'][f'mean_test_{metrica}']
+                    # Truncar para o menor tamanho
+                    modelo_scores.extend(scores[:min_samples])
+                scores_padronizados.append(modelo_scores)
+
+            if len(scores_padronizados) >= 2:  # Friedman requer pelo menos 2 grupos
+                stat, p = stats.friedmanchisquare(*scores_padronizados)
+
+                resultados = {
+                    'statistic': float(stat),
+                    'p_value': float(p),
+                    'n_samples': min_samples
+                }
+
+                self.logger.info(
+                    f"Teste de Friedman: estatística={stat:.4f}, p-valor={p:.4f}, "
+                    f"n_amostras={min_samples}"
+                )
+                return resultados
+            else:
+                self.logger.warning(
+                    "Número insuficiente de modelos para teste de Friedman")
                 return None
-
-            # Exemplo para a métrica F1
-            f1_scores = dados['f1_macro']
-
-            # Verificar se há pelo menos 3 amostras
-            if len(f1_scores) < 3:
-                logging.error(
-                    "Erro durante a execução: At least 3 sets of samples must be given for Friedman test, got fewer.")
-                return None
-
-            # Realizar o teste de Friedman
-            stat, p = stats.friedmanchisquare(
-                *[dados['f1_macro'][i] for i in range(len(modelos))])
-
-            resultados = {
-                'statistic': stat,
-                'p_value': p
-            }
-
-            logging.info(
-                f"Resultado do teste de Friedman: Estatística={stat}, p-valor={p}")
-            return resultados
 
         except Exception as e:
-            logging.error(f"Erro durante o teste de significância: {str(e)}")
+            self.logger.error(
+                f"Erro durante o teste de significância: {str(e)}")
             return None
 
     def gerar_graficos_comparativos(self, diretorio_saida: str = 'resultados'):
