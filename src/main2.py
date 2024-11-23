@@ -268,8 +268,8 @@ class ClassificadorGeneros:
         self.scoring = {
             'accuracy': 'accuracy',
             'precision_macro': make_scorer(precision_score, average='macro', zero_division=0),
-            'recall_macro': 'recall_macro',
-            'f1_macro': 'f1_macro'
+            'recall_macro': make_scorer(recall_score, average='macro', zero_division=0),
+            'f1_macro': make_scorer(f1_score, average='macro', zero_division=0)
         }
 
         self.resultados = {}
