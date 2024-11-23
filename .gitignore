@@ -162,3 +162,9 @@ cython_debug/
 #.idea/
 
 */textos_extraidos/*
+*/resultados/*
+*.png
+analise_vocabulario.txt
+caracteristicas_distintas.txt
+*.csv
+*.prof
