@@ -30,6 +30,9 @@ from scipy import stats
 import numpy as np
 import chardet
 from multiprocessing import Lock, Manager
+from imblearn.over_sampling import SMOTE
+from imblearn.under_sampling import RandomUnderSampler
+from imblearn.pipeline import Pipeline as ImbPipeline
 
 
 logging.basicConfig(
@@ -54,7 +57,7 @@ def processar_pdf(args):
             return None
         texto_limpo, texto_original = limpar_texto(
             texto_extraido, preservar_palavras)
-        if texto_limpo:
+        if (texto_limpo):
             nome_arquivo_txt = os.path.splitext(os.path.basename(arquivo))[0]
             if salvar_texto_em_arquivo(nome_arquivo_txt, texto_limpo, texto_original, diretorio_raiz, classe):
                 return (texto_limpo, texto_original, classe)
@@ -340,6 +343,13 @@ class ClassificadorGeneros:
         """
         Treina e avalia cada classificador usando validação cruzada.
         """
+        # Determinar número adequado de folds
+        n_folds = min(5, min(Counter(self.y_train).values()))
+
+        if n_folds < 2:
+            logging.error("Amostras insuficientes para validação cruzada")
+            return
+
         for nome, clf in self.classificadores.items():
             logging.info(f"Iniciando treinamento do classificador: {nome}")
 
@@ -348,7 +358,7 @@ class ClassificadorGeneros:
                     clf,
                     self.X_train,
                     self.y_train,
-                    cv=5,
+                    cv=n_folds,  # Usando número adaptativo de folds
                     scoring=self.scoring,
                     return_train_score=True,
                     n_jobs=-1
@@ -404,15 +414,17 @@ class ClassificadorGeneros:
 
 
 class OtimizadorModelos:
-    def __init__(self, X_train, y_train, X_test, y_test, n_folds=10):
-        """
-        Inicializa o otimizador com dados de treino e teste.
-        """
+    def __init__(self, X_train, y_train, X_test, y_test, desired_folds=10):
         self.X_train = X_train
         self.y_train = y_train
         self.X_test = X_test
         self.y_test = y_test
-        self.n_folds = n_folds
+        self.n_folds = obter_minimo_folds(y_train, desired_folds)
+
+        if self.n_folds < 2:
+            logging.error(
+                f"n_folds={self.n_folds} é inválido para a validação cruzada com as amostras atuais.")
+            return
 
         # Configurando métricas de avaliação
         self.scoring = {
@@ -456,39 +468,27 @@ class OtimizadorModelos:
         }
 
     def otimizar_modelo(self, nome_modelo: str, modelo, param_grid: Dict):
-        """
-        Otimiza um modelo usando GridSearchCV.
-        """
         logging.info(f"Iniciando otimização do modelo: {nome_modelo}")
 
         try:
-            # Configurando GridSearchCV
             grid_search = GridSearchCV(
                 estimator=modelo,
                 param_grid=param_grid,
                 scoring=self.scoring,
-                cv=self.n_folds,
+                cv=self.n_folds,  # Usa o número ajustado de folds
                 n_jobs=-1,
                 refit='f1_macro',
                 return_train_score=True,
                 verbose=1
             )
 
-            # Realizando busca
             grid_search.fit(self.X_train, self.y_train)
 
-            # Salvando os resultados
             self.resultados[nome_modelo] = {
-                'melhores_params': grid_search.best_params_,
-                'melhor_score': grid_search.best_score_,
-                'scores_cv': {
-                    metric: {
-                        'mean': grid_search.cv_results_[f'mean_test_{metric}'][grid_search.best_index_],
-                        'std': grid_search.cv_results_[f'std_test_{metric}'][grid_search.best_index_]
-                    }
-                    for metric in self.scoring.keys()
-                },
-                'modelo_otimizado': grid_search.best_estimator_
+                'best_estimator': grid_search.best_estimator_,
+                'best_params': grid_search.best_params_,
+                'best_score': grid_search.best_score_,
+                'cv_results': grid_search.cv_results_
             }
 
             logging.info(f"Otimização concluída para {nome_modelo}")
@@ -507,50 +507,79 @@ class OtimizadorModelos:
             'MLP': MLPClassifier(random_state=42, max_iter=1000)
         }
         for nome, modelo in modelos.items():
-            self.otimizar_modelo(nome, modelo, self.param_grids[nome])
+            self.otimizar_modelo(nome, modelo, self.param_grids.get(nome, {}))
 
     def avaliar_significancia(self):
-        """Realiza teste estatístico para comparar modelos."""
-        if len(self.resultados) < 2:
-            raise ValueError("Necessário pelo menos 2 modelos para comparação")
+        """Realiza o teste de Friedman para avaliar a significância estatística entre os modelos."""
+        try:
+            metricas = ['accuracy', 'precision_macro',
+                        'recall_macro', 'f1_macro']
+            dados = {metrica: [] for metrica in metricas}
+            modelos = list(self.resultados.keys())
 
-        scores = {}
-        scores_array = []
+            for metrica in metricas:
+                for modelo in modelos:
+                    dados[metrica].append(
+                        self.resultados[modelo]['cv_results'][f'mean_test_{metrica}'])
 
-        for nome, resultado in self.resultados.items():
-            modelo = resultado['modelo_otimizado']
-            pred = modelo.predict(self.X_test)
-            score = f1_score(self.y_test, pred, average='macro')
-            scores[nome] = score
-            scores_array.append(score)
+            # Verificar se há pelo menos 3 modelos
+            if len(modelos) < 3:
+                logging.error(
+                    "Erro durante a execução: At least 3 models must be compared for Friedman test, got fewer.")
+                return None
 
-        scores_array = np.array(scores_array)
-        statistic, p_value = stats.friedmanchisquare(scores_array)
+            # Exemplo para a métrica F1
+            f1_scores = dados['f1_macro']
 
-        return {
-            'scores': scores,
-            'statistic': float(statistic),
-            'p_value': float(p_value)
-        }
+            # Verificar se há pelo menos 3 amostras
+            if len(f1_scores) < 3:
+                logging.error(
+                    "Erro durante a execução: At least 3 sets of samples must be given for Friedman test, got fewer.")
+                return None
+
+            # Realizar o teste de Friedman
+            stat, p = stats.friedmanchisquare(
+                *[dados['f1_macro'][i] for i in range(len(modelos))])
+
+            resultados = {
+                'statistic': stat,
+                'p_value': p
+            }
+
+            logging.info(
+                f"Resultado do teste de Friedman: Estatística={stat}, p-valor={p}")
+            return resultados
+
+        except Exception as e:
+            logging.error(f"Erro durante o teste de significância: {str(e)}")
+            return None
 
     def gerar_graficos_comparativos(self, diretorio_saida: str = 'resultados'):
-        """Gera gráficos comparativos entre os modelos."""
         os.makedirs(diretorio_saida, exist_ok=True)
 
-        # Preparando dados para visualização
         metricas_df = []
         for modelo, resultado in self.resultados.items():
-            for metrica, valores in resultado['scores_cv'].items():
-                metricas_df.append({
-                    'modelo': modelo,
-                    'metrica': metrica,
-                    'valor': valores['mean'],
-                    'std': valores['std']
-                })
+            # Usar cv_results em vez de scores_cv
+            for metrica in ['mean_test_accuracy', 'mean_test_precision_macro',
+                            'mean_test_recall_macro', 'mean_test_f1_macro']:
+                if metrica in resultado['cv_results']:
+                    metricas_df.append({
+                        'modelo': modelo,
+                        'metrica': metrica.replace('mean_test_', ''),
+                        'valor': resultado['cv_results'][metrica].mean(),
+                        'std': resultado['cv_results'][metrica].std()
+                    })
 
         df = pd.DataFrame(metricas_df)
+        logging.info(
+            f"Colunas do DataFrame para plotagem: {df.columns.tolist()}")
 
-        # Gerando gráfico de barras com erro
+        # Verifique se a coluna 'modelo' existe
+        if 'modelo' not in df.columns:
+            logging.error("A coluna 'modelo' não existe no DataFrame.")
+            return
+
+        # Plotagem
         plt.figure(figsize=(12, 6))
         sns.barplot(
             data=df,
@@ -562,12 +591,10 @@ class OtimizadorModelos:
         plt.title('Comparação de Métricas entre Modelos')
         plt.xticks(rotation=45)
         plt.tight_layout()
-        plt.savefig(os.path.join(
-            diretorio_saida, 'comparacao_modelos.png'))
+        plt.savefig(os.path.join(diretorio_saida, 'comparacao_modelos.png'))
         plt.close()
 
     def salvar_resultados(self, diretorio_saida: str = 'resultados'):
-        """Salva todos os resultados em formato JSON e CSV."""
         os.makedirs(diretorio_saida, exist_ok=True)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -575,14 +602,14 @@ class OtimizadorModelos:
         resultados_serializaveis = {}
         for modelo, resultado in self.resultados.items():
             resultados_serializaveis[modelo] = {
-                'melhores_params': resultado['melhores_params'],
-                'melhor_score': float(resultado['melhor_score']),
-                'scores_cv': {
+                'melhores_params': resultado['best_params'],
+                'melhor_score': float(resultado['best_score_']),
+                'metricas': {
                     metric: {
-                        'mean': float(values['mean']),
-                        'std': float(values['std'])
+                        'mean': float(resultado['cv_results'][f'mean_test_{metric}'].mean()),
+                        'std': float(resultado['cv_results'][f'mean_test_{metric}'].std())
                     }
-                    for metric, values in resultado['scores_cv'].items()
+                    for metric in ['accuracy', 'precision_macro', 'recall_macro', 'f1_macro']
                 }
             }
 
@@ -791,7 +818,8 @@ class ProcessadorVetorial:
                  min_df: int = 3,
                  max_df: float = 0.95,
                  ngram_range: Tuple = (1, 2),
-                 max_features: int = 50000):
+                 max_features: int = 50000,
+                 balanceamento: str = 'combinado'):  # Novo parâmetro
         self.vectorizer = TfidfVectorizer(
             min_df=min_df,
             max_df=max_df,
@@ -799,6 +827,7 @@ class ProcessadorVetorial:
             max_features=max_features,
             stop_words='english'
         )
+        self.balanceamento = balanceamento
         self.logger = logging.getLogger(__name__)
 
     def vetorizar_e_dividir(self,
@@ -816,7 +845,7 @@ class ProcessadorVetorial:
             # Gerando relatório do vocabulário
             self._analisar_vocabulario()
 
-            # Divisão estratificada
+            # Divisão estratificada inicial
             X_train, X_test, y_train, y_test = train_test_split(
                 X, classes,
                 test_size=test_size,
@@ -824,7 +853,11 @@ class ProcessadorVetorial:
                 stratify=classes
             )
 
-            # Validando o balanceamento
+            # Aplicar balanceamento apenas no conjunto de treino
+            X_train, y_train = self._aplicar_balanceamento(
+                X_train, y_train, random_state)
+
+            # Validar balanceamento após aplicação
             self._validar_balanceamento(y_train, y_test)
 
             # Analisando esparsidade
@@ -840,6 +873,38 @@ class ProcessadorVetorial:
         except Exception as e:
             self.logger.error(f"Erro na vetorização/divisão: {str(e)}")
             raise
+
+    def _aplicar_balanceamento(self, X, y, random_state):
+        """Aplica a estratégia de balanceamento escolhida."""
+        if self.balanceamento == 'smote':
+            # Sobreamostragem com SMOTE
+            sampler = SMOTE(random_state=random_state)
+            X_bal, y_bal = sampler.fit_resample(X, y)
+
+        elif self.balanceamento == 'under':
+            # Subamostragem aleatória
+            sampler = RandomUnderSampler(random_state=random_state)
+            X_bal, y_bal = sampler.fit_resample(X, y)
+
+        elif self.balanceamento == 'combinado':
+            # Combina SMOTE com subamostragem
+            over = SMOTE(sampling_strategy='auto', random_state=random_state)
+            under = RandomUnderSampler(
+                sampling_strategy='auto', random_state=random_state)
+
+            pipeline = ImbPipeline([
+                ('over', over),
+                ('under', under)
+            ])
+
+            X_bal, y_bal = pipeline.fit_resample(X, y)
+
+        else:
+            # Sem balanceamento
+            return X, y
+
+        self.logger.info(f"Distribuição após balanceamento: {Counter(y_bal)}")
+        return X_bal, y_bal
 
     def _validar_balanceamento(self, y_train: List[str], y_test: List[str]) -> None:
         """Valida o balanceamento das classes nos conjuntos."""
@@ -930,6 +995,17 @@ def gerar_textos(diretorios_pdfs: Dict[str, str],
                 )
 
 
+def obter_minimo_folds(y_train, desired_folds=10):
+    contagem_classes = Counter(y_train)
+    min_amostras = min(contagem_classes.values())
+    return min(desired_folds, min_amostras)
+
+
+def verificar_distribuicao(y):
+    contagem = Counter(y)
+    logging.info(f"Distribuição das classes: {contagem}")
+
+
 def main_process():
     """Função principal para executar todas as análises com profiling."""
     profiler = cProfile.Profile()
@@ -952,6 +1028,12 @@ def main_process():
         logging.info(
             f"Processamento concluído. Total de textos: {len(textos)}")
 
+        # Verificar número mínimo de amostras por classe
+        contagem_classes = Counter(classes)
+        if min(contagem_classes.values()) < 2:
+            raise ValueError(
+                f"Número insuficiente de amostras por classe: {dict(contagem_classes)}")
+
         analisador = AnalisadorTextos()
         analisador.analisar_distribuicao_tamanhos(textos, classes)
         vocab_relevante = analisador.analisar_vocabulario(textos, min_freq=5)
@@ -963,7 +1045,8 @@ def main_process():
             min_df=3,              # Frequência mínima dos termos
             max_df=0.95,           # Frequência máxima (%)
             ngram_range=(1, 2),    # Uni e bigramas
-            max_features=50000     # Tamanho máximo do vocabulário ajustado
+            max_features=50000,    # Tamanho máximo do vocabulário ajustado
+            balanceamento='combinado'
         )
 
         # Realizando a vetorização e divisão
@@ -973,6 +1056,8 @@ def main_process():
             test_size=0.3,         # 30% para teste
             random_state=42        # Semente para reprodutibilidade
         )
+
+        verificar_distribuicao(y_train)
 
         # Gerando visualizações da vetorização
         processador.visualizar_importancia_termos()
@@ -999,7 +1084,8 @@ def main_process():
 
         # Otimização dos modelos
         logging.info("Iniciando otimização dos modelos...")
-        otimizador = OtimizadorModelos(X_train, y_train, X_test, y_test)
+        otimizador = OtimizadorModelos(
+            X_train, y_train, X_test, y_test, desired_folds=5)
         otimizador.otimizar_todos_modelos()
         otimizador.gerar_graficos_comparativos(
             diretorio_saida=diretorios['resultados'])
