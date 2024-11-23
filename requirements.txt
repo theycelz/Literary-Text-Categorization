@@ -17,6 +17,7 @@ scikit-learn  # Biblioteca para aprendizado de máquina
 pandas  # Biblioteca para manipulação e análise de dados
 numpy  # Biblioteca para computação numérica
 scipy  # Biblioteca para computação científica
+imbalanced-learn
 
 # Bibliotecas para visualização de dados
 seaborn  # Biblioteca para visualização de dados baseada no matplotlib
