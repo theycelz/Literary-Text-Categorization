@@ -385,30 +385,70 @@ class ClassificadorGeneros:
 
     def salvar_resultados(self, diretorio_saida: str = 'resultados'):
         """
-        Salva os resultados em formato JSON e CSV.
+        Salva os resultados da otimização de forma segura.
         """
         os.makedirs(diretorio_saida, exist_ok=True)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-        # Salvando em um JSON
-        caminho_json = os.path.join(
-            diretorio_saida, f'resultados_{timestamp}.json')
-        with open(caminho_json, 'w') as f:
-            json.dump(self.resultados, f, indent=4)
-        # Convertendo para DataFrame e salvando em um CSV
-        rows = []
-        for clf_name, results in self.resultados.items():
-            row = {'classificador': clf_name}
-            for metric, values in results['metricas'].items():
-                row[f'{metric}_media'] = values['media']
-                row[f'{metric}_std'] = values['desvio_padrao']
-            row['tempo_treino'] = results['tempo_treino']
-            rows.append(row)
+        # Preparando resultados para serialização
+        resultados_serializaveis = {}
+        for modelo, resultado in self.resultados.items():
+            if not resultado:  # Pula se resultado for None
+                continue
 
-        df_resultados = pd.DataFrame(rows)
-        caminho_csv = os.path.join(
-            diretorio_saida, f'resultados_{timestamp}.csv')
-        df_resultados.to_csv(caminho_csv, index=False)
+            try:
+                resultados_serializaveis[modelo] = {
+                    'melhores_params': resultado.get('best_params', {}),
+                    'melhor_score': float(resultado.get('best_score', 0.0)),
+                    'metricas': {}
+                }
+
+                # Extrair métricas dos resultados CV de forma segura
+                cv_results = resultado.get('cv_results', {})
+                for metric in ['accuracy', 'precision_macro', 'recall_macro', 'f1_macro']:
+                    metric_key = f'mean_test_{metric}'
+                    if metric_key in cv_results:
+                        resultados_serializaveis[modelo]['metricas'][metric] = {
+                            'mean': float(np.mean(cv_results[metric_key])),
+                            'std': float(np.std(cv_results[metric_key]))
+                        }
+
+            except Exception as e:
+                logging.warning(
+                    f"Erro ao processar resultados do modelo {modelo}: {str(e)}")
+                continue
+
+        # Salvando em JSON
+        try:
+            caminho_json = os.path.join(
+                diretorio_saida, f'resultados_otimizacao_{timestamp}.json')
+            with open(caminho_json, 'w') as f:
+                json.dump(resultados_serializaveis, f, indent=4)
+        except Exception as e:
+            logging.error(f"Erro ao salvar JSON: {str(e)}")
+
+        # Convertendo para DataFrame e salvando em CSV
+        try:
+            rows = []
+            for modelo, resultado in resultados_serializaveis.items():
+                row = {'modelo': modelo}
+                # Adiciona parâmetros
+                row.update(
+                    {f'param_{k}': v for k, v in resultado['melhores_params'].items()})
+                # Adiciona métricas
+                for metrica, valores in resultado['metricas'].items():
+                    row[f'{metrica}_mean'] = valores['mean']
+                    row[f'{metrica}_std'] = valores['std']
+                rows.append(row)
+
+            if rows:  # Só cria DataFrame se houver dados
+                df_resultados = pd.DataFrame(rows)
+                caminho_csv = os.path.join(
+                    diretorio_saida, f'resultados_otimizacao_{timestamp}.csv')
+                df_resultados.to_csv(caminho_csv, index=False)
+
+        except Exception as e:
+            logging.error(f"Erro ao salvar CSV: {str(e)}")
 
         logging.info(f"Resultados salvos em {diretorio_saida}")
 
@@ -595,45 +635,71 @@ class OtimizadorModelos:
         plt.close()
 
     def salvar_resultados(self, diretorio_saida: str = 'resultados'):
+        """
+        Salva os resultados da otimização de forma segura.
+        """
         os.makedirs(diretorio_saida, exist_ok=True)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
         # Preparando resultados para serialização
         resultados_serializaveis = {}
         for modelo, resultado in self.resultados.items():
-            resultados_serializaveis[modelo] = {
-                'melhores_params': resultado['best_params'],
-                'melhor_score': float(resultado['best_score_']),
-                'metricas': {
-                    metric: {
-                        'mean': float(resultado['cv_results'][f'mean_test_{metric}'].mean()),
-                        'std': float(resultado['cv_results'][f'mean_test_{metric}'].std())
-                    }
-                    for metric in ['accuracy', 'precision_macro', 'recall_macro', 'f1_macro']
+            if not resultado:  # Pula se resultado for None
+                continue
+
+            try:
+                resultados_serializaveis[modelo] = {
+                    'melhores_params': resultado.get('best_params', {}),
+                    'melhor_score': float(resultado.get('best_score', 0.0)),
+                    'metricas': {}
                 }
-            }
+
+                # Extrair métricas dos resultados CV de forma segura
+                cv_results = resultado.get('cv_results', {})
+                for metric in ['accuracy', 'precision_macro', 'recall_macro', 'f1_macro']:
+                    metric_key = f'mean_test_{metric}'
+                    if metric_key in cv_results:
+                        resultados_serializaveis[modelo]['metricas'][metric] = {
+                            'mean': float(np.mean(cv_results[metric_key])),
+                            'std': float(np.std(cv_results[metric_key]))
+                        }
+
+            except Exception as e:
+                logging.warning(
+                    f"Erro ao processar resultados do modelo {modelo}: {str(e)}")
+                continue
 
         # Salvando em JSON
-        caminho_json = os.path.join(
-            diretorio_saida, f'resultados_otimizacao_{timestamp}.json')
-        with open(caminho_json, 'w') as f:
-            json.dump(resultados_serializaveis, f, indent=4)
+        try:
+            caminho_json = os.path.join(
+                diretorio_saida, f'resultados_otimizacao_{timestamp}.json')
+            with open(caminho_json, 'w') as f:
+                json.dump(resultados_serializaveis, f, indent=4)
+        except Exception as e:
+            logging.error(f"Erro ao salvar JSON: {str(e)}")
 
         # Convertendo para DataFrame e salvando em CSV
-        rows = []
-        for modelo, resultado in resultados_serializaveis.items():
-            row = {'modelo': modelo}
-            row.update(
-                {f'param_{k}': v for k, v in resultado['melhores_params'].items()})
-            for metrica, valores in resultado['scores_cv'].items():
-                row[f'{metrica}_mean'] = valores['mean']
-                row[f'{metrica}_std'] = valores['std']
-            rows.append(row)
+        try:
+            rows = []
+            for modelo, resultado in resultados_serializaveis.items():
+                row = {'modelo': modelo}
+                # Adiciona parâmetros
+                row.update(
+                    {f'param_{k}': v for k, v in resultado['melhores_params'].items()})
+                # Adiciona métricas
+                for metrica, valores in resultado['metricas'].items():
+                    row[f'{metrica}_mean'] = valores['mean']
+                    row[f'{metrica}_std'] = valores['std']
+                rows.append(row)
 
-        df_resultados = pd.DataFrame(rows)
-        caminho_csv = os.path.join(
-            diretorio_saida, f'resultados_otimizacao_{timestamp}.csv')
-        df_resultados.to_csv(caminho_csv, index=False)
+            if rows:  # Só cria DataFrame se houver dados
+                df_resultados = pd.DataFrame(rows)
+                caminho_csv = os.path.join(
+                    diretorio_saida, f'resultados_otimizacao_{timestamp}.csv')
+                df_resultados.to_csv(caminho_csv, index=False)
+
+        except Exception as e:
+            logging.error(f"Erro ao salvar CSV: {str(e)}")
 
         logging.info(f"Resultados salvos em {diretorio_saida}")
 
@@ -819,7 +885,7 @@ class ProcessadorVetorial:
                  max_df: float = 0.95,
                  ngram_range: Tuple = (1, 2),
                  max_features: int = 50000,
-                 balanceamento: str = 'combinado'):  # Novo parâmetro
+                 balanceamento: str = 'combinado'):
         self.vectorizer = TfidfVectorizer(
             min_df=min_df,
             max_df=max_df,
@@ -830,67 +896,35 @@ class ProcessadorVetorial:
         self.balanceamento = balanceamento
         self.logger = logging.getLogger(__name__)
 
-    def vetorizar_e_dividir(self,
-                            textos: List[str],
-                            classes: List[str],
-                            test_size: float = 0.3,
-                            random_state: int = 42) -> Tuple:
+    def _aplicar_balanceamento(self, X, y, random_state):
         """
-        Vetoriza os textos usando TF-IDF e divide em conjuntos de treino e teste.
+        Aplica balanceamento adaptativo para garantir distribuição igual entre classes.
         """
         try:
-            # Vetorização TF-IDF
-            X = self.vectorizer.fit_transform(textos)
+            # Calculando a distribuição atual
+            contagem_classes = Counter(y)
 
-            # Gerando relatório do vocabulário
-            self._analisar_vocabulario()
+            # Determinando o tamanho alvo para cada classe
+            # Para garantir balanceamento perfeito, usamos o número médio de amostras
+            n_classes = len(contagem_classes)
+            tamanho_alvo = sum(contagem_classes.values()) // n_classes
 
-            # Divisão estratificada inicial
-            X_train, X_test, y_train, y_test = train_test_split(
-                X, classes,
-                test_size=test_size,
+            # Configurando estratégia de balanceamento adaptativa
+            strategy = {
+                classe: tamanho_alvo for classe in contagem_classes.keys()}
+
+            # Pipeline de balanceamento adaptativo
+            over = SMOTE(
+                sampling_strategy=strategy,
                 random_state=random_state,
-                stratify=classes
+                # Adapta k_neighbors
+                k_neighbors=min(5, min(contagem_classes.values())-1)
             )
 
-            # Aplicar balanceamento apenas no conjunto de treino
-            X_train, y_train = self._aplicar_balanceamento(
-                X_train, y_train, random_state)
-
-            # Validar balanceamento após aplicação
-            self._validar_balanceamento(y_train, y_test)
-
-            # Analisando esparsidade
-            self._analisar_esparsidade(X_train)
-
-            # Deve ser (n_textos_treino, n_palavras)
-            print(f"Tamanho da matriz BoW (Treino): {X_train.shape}")
-            # Deve ser (n_textos_teste, n_palavras)
-            print(f"Tamanho da matriz BoW (Teste): {X_test.shape}")
-
-            return X_train, X_test, y_train, y_test
-
-        except Exception as e:
-            self.logger.error(f"Erro na vetorização/divisão: {str(e)}")
-            raise
-
-    def _aplicar_balanceamento(self, X, y, random_state):
-        """Aplica a estratégia de balanceamento escolhida."""
-        if self.balanceamento == 'smote':
-            # Sobreamostragem com SMOTE
-            sampler = SMOTE(random_state=random_state)
-            X_bal, y_bal = sampler.fit_resample(X, y)
-
-        elif self.balanceamento == 'under':
-            # Subamostragem aleatória
-            sampler = RandomUnderSampler(random_state=random_state)
-            X_bal, y_bal = sampler.fit_resample(X, y)
-
-        elif self.balanceamento == 'combinado':
-            # Combina SMOTE com subamostragem
-            over = SMOTE(sampling_strategy='auto', random_state=random_state)
             under = RandomUnderSampler(
-                sampling_strategy='auto', random_state=random_state)
+                sampling_strategy=strategy,
+                random_state=random_state
+            )
 
             pipeline = ImbPipeline([
                 ('over', over),
@@ -899,12 +933,48 @@ class ProcessadorVetorial:
 
             X_bal, y_bal = pipeline.fit_resample(X, y)
 
-        else:
-            # Sem balanceamento
-            return X, y
+            # Verificação final do balanceamento
+            contagem_final = Counter(y_bal)
+            proporcoes = {classe: (count/len(y_bal))*100
+                          for classe, count in contagem_final.items()}
 
-        self.logger.info(f"Distribuição após balanceamento: {Counter(y_bal)}")
-        return X_bal, y_bal
+            self.logger.info("Balanceamento final alcançado:")
+            for classe, prop in proporcoes.items():
+                self.logger.info(f"Classe {classe}: {prop:.1f}%")
+
+            return X_bal, y_bal
+
+        except Exception as e:
+            self.logger.error(f"Erro no balanceamento adaptativo: {str(e)}")
+            return X, y  # Retorna dados originais em caso de erro
+
+    def vetorizar_e_dividir(self, textos: List[str], classes: List[str],
+                            test_size: float = 0.3, random_state: int = 42) -> Tuple:
+        try:
+            # Vetorização TF-IDF
+            X = self.vectorizer.fit_transform(textos)
+
+            # Primeiro balanceamento antes da divisão
+            X_bal, y_bal = self._aplicar_balanceamento(
+                X, classes, random_state)
+
+            # Divisão estratificada
+            X_train, X_test, y_train, y_test = train_test_split(
+                X_bal, y_bal,
+                test_size=test_size,
+                random_state=random_state,
+                stratify=y_bal  # Usa dados já balanceados
+            )
+
+            # Segundo balanceamento apenas no conjunto de treino
+            X_train, y_train = self._aplicar_balanceamento(
+                X_train, y_train, random_state)
+
+            return X_train, X_test, y_train, y_test
+
+        except Exception as e:
+            self.logger.error(f"Erro na vetorização/divisão: {str(e)}")
+            raise
 
     def _validar_balanceamento(self, y_train: List[str], y_test: List[str]) -> None:
         """Valida o balanceamento das classes nos conjuntos."""
