@@ -260,29 +260,21 @@ class AnalisadorTextos:
 
 class ClassificadorGeneros:
     def __init__(self, X_train, y_train, X_test, y_test):
-        """
-        Inicializa o classificador com os dados de treino e teste.
-        """
         self.X_train = X_train
         self.y_train = y_train
         self.X_test = X_test
         self.y_test = y_test
 
-        # Definindo métricas para validação cruzada
         self.scoring = {
             'accuracy': 'accuracy',
-            'precision_macro': 'precision_macro',
+            'precision_macro': make_scorer(precision_score, average='macro', zero_division=0),
             'recall_macro': 'recall_macro',
             'f1_macro': 'f1_macro'
         }
 
-        # Dicionário para armazenar resultados
         self.resultados = {}
 
     def configurar_classificadores(self):
-        """
-        Configura os classificadores com hiperparâmetros iniciais conservadores para evitar overfitting.
-        """
         self.classificadores = {
             'DecisionTree': DecisionTreeClassifier(
                 max_depth=10,
@@ -301,7 +293,6 @@ class ClassificadorGeneros:
             'LogisticRegression': LogisticRegression(
                 C=1.0,
                 max_iter=1000,
-                multi_class='multinomial',
                 random_state=42
             ),
             'MLP': MLPClassifier(
@@ -634,7 +625,7 @@ def pdf_para_txt(caminho_pdf):
         return ""
 
 
-def limpar_texto(texto: str, preservar_palavras: Set[str] = None) -> Tuple[str, str]:
+def limpar_texto(texto: str, preservar_palavras: set[str] = None) -> Tuple[str, str]:
     """
     Limpa e processa o texto com melhor tratamento de erros e logging mais detalhado.
     """
