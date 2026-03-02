@@ -8,7 +8,6 @@ from pdfminer.high_level import extract_text
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from langdetect import detect
-import chardet
 import re
 
 STOP_WORDS = set(stopwords.words('english'))
