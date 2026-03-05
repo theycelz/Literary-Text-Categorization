@@ -2,7 +2,7 @@ import os
 import logging
 import multiprocessing
 from collections import Counter
-from typing import Dict, Tuple
+from typing import Dict, Set, Tuple
 import pandas as pd
 from pdfminer.high_level import extract_text
 from nltk.corpus import stopwords
@@ -48,27 +48,14 @@ def processar_pdfs(diretorio_raiz: str, diretorios_pdfs: Dict[str, str]):
     textos_limpos = []
     textos_originais = []
     classes = []
-    manager = multiprocessing.Manager()
-    estatisticas = manager.dict({
-        'total_processado': 0,
+    estatisticas = {
         'sucessos': 0,
         'falhas': 0,
-        'por_classe': manager.dict({
-            classe: manager.dict({'processados': 0, 'falhas': 0})
+        'por_classe': {
+            classe: {'processados': 0, 'falhas': 0}
             for classe in diretorios_pdfs.keys()
-        })
-    })
-
-    lock = multiprocessing.Lock()
-
-    def atualizar_estatisticas(resultado, classe):
-        with lock:
-            if resultado:
-                estatisticas['sucessos'] += 1
-                estatisticas['por_classe'][classe]['processados'] += 1
-            else:
-                estatisticas['falhas'] += 1
-                estatisticas['por_classe'][classe]['falhas'] += 1
+        }
+    }
 
     palavras_preservar_dict = {
         'horror': {'fear', 'dark', 'blood', 'death', 'night', 'ghost', 'shadow'},
@@ -148,7 +135,7 @@ def pdf_para_txt(caminho_pdf):
         return ""
 
 
-def limpar_texto(texto: str, preservar_palavras: set[str] = None) -> Tuple[str, str]:
+def limpar_texto(texto: str, preservar_palavras: Set[str] = None) -> Tuple[str, str]:
     if not texto or not isinstance(texto, str):
         logging.error(f"Texto inválido ou vazio: {type(texto)}")
         return "", ""
