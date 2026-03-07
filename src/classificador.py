@@ -113,21 +113,17 @@ class ClassificadorGeneros:
                 continue
 
             try:
+                metricas = resultado.get('metricas', {})
                 resultados_serializaveis[modelo] = {
-                    'melhores_params': resultado.get('best_params', {}),
-                    'melhor_score': float(resultado.get('best_score', 0.0)),
-                    'metricas': {}
-                }
-
-                cv_results = resultado.get('cv_results', {})
-                for metric in ['accuracy', 'precision_macro', 'recall_macro', 'f1_macro']:
-                    metric_key = f'mean_test_{metric}'
-                    if metric_key in cv_results:
-                        resultados_serializaveis[modelo]['metricas'][metric] = {
-                            'mean': float(np.mean(cv_results[metric_key])),
-                            'std': float(np.std(cv_results[metric_key]))
+                    'metricas': {
+                        metrica: {
+                            'mean': float(valores['media']),
+                            'std': float(valores['desvio_padrao'])
                         }
-
+                        for metrica, valores in metricas.items()
+                    },
+                    'tempo_treino': float(resultado.get('tempo_treino', 0.0))
+                }
             except Exception as e:
                 logging.warning(
                     f"Erro ao processar resultados do modelo {modelo}: {str(e)}")
@@ -135,7 +131,7 @@ class ClassificadorGeneros:
 
         try:
             caminho_json = os.path.join(
-                diretorio_saida, f'resultados_otimizacao_{timestamp}.json')
+                diretorio_saida, f'resultados_classificacao_{timestamp}.json')
             with open(caminho_json, 'w') as f:
                 json.dump(resultados_serializaveis, f, indent=4)
         except Exception as e:
@@ -144,9 +140,7 @@ class ClassificadorGeneros:
         try:
             rows = []
             for modelo, resultado in resultados_serializaveis.items():
-                row = {'modelo': modelo}
-                row.update(
-                    {f'param_{k}': v for k, v in resultado['melhores_params'].items()})
+                row = {'modelo': modelo, 'tempo_treino': resultado['tempo_treino']}
                 for metrica, valores in resultado['metricas'].items():
                     row[f'{metrica}_mean'] = valores['mean']
                     row[f'{metrica}_std'] = valores['std']
@@ -155,7 +149,7 @@ class ClassificadorGeneros:
             if rows:
                 df_resultados = pd.DataFrame(rows)
                 caminho_csv = os.path.join(
-                    diretorio_saida, f'resultados_otimizacao_{timestamp}.csv')
+                    diretorio_saida, f'resultados_classificacao_{timestamp}.csv')
                 df_resultados.to_csv(caminho_csv, index=False)
 
         except Exception as e:

@@ -126,7 +126,6 @@ def main_process():
 
 
 if __name__ == "__main__":
-    import nltk
     nltk.download('punkt')
     nltk.download('stopwords')
     nltk_data_dir = os.path.expanduser('~/nltk_data')
