@@ -1,24 +1,65 @@
 # Classificação de Textos Literários
 
-## Objetivo
+Classificação automatizada de textos literários em gêneros (Horror, Poesia, Romance) utilizando aprendizado de máquina supervisionado em um corpus de 300+ obras de domínio público do Project Gutenberg.
 
-Este projeto tem como objetivo explorar a classificação de textos de diferentes estilos literários, como poesia, prosa e jornalismo. O desafio envolve a extração de textos de arquivos PDF, pré-processamento, e transformação dos textos em vetores utilizando o modelo **Bag of Words (BoW)**. O projeto precisa garantir que todos os documentos estejam na mesma língua para evitar inconsistências na classificação.
+## Visão Geral
 
-## Instruções
+Pipeline completo de NLP que:
 
-- **Seleção dos Estilos Literários**: O grupo deve selecionar **três estilos literários** (ex.: poesia, prosa e jornalismo).
-- **Extração de Texto**: Todos os textos devem ser extraídos de arquivos **PDF** e convertidos para **TXT** antes do processamento.
-- **Limpeza de Dados**: A remoção de **stopwords** é obrigatória antes de gerar os vetores BoW.
-- **Consistência de Dados**: Cada estilo literário deve conter pelo menos **100 exemplos**.
-- **Linguagem Única**: Todos os textos devem estar na mesma língua.
+1. **Extrai** texto de arquivos PDF com `pdfminer`
+2. **Pré-processa** com tokenização, remoção de stopwords e validação de idioma
+3. **Vetoriza** usando TF-IDF com uni/bigramas e balanceamento de classes (SMOTE)
+4. **Classifica** com 5 modelos: Árvore de Decisão, KNN, Naive Bayes, Regressão Logística e MLP
+5. **Otimiza** hiperparâmetros via GridSearchCV com validação cruzada estratificada
+6. **Avalia** com acurácia, precisão, recall, F1-score (macro) e teste de significância de Friedman
 
-## Requisitos
+## Estrutura do Projeto
 
-- **Fontes de Dados**:
-  - **Poesia**: Project Gutenberg.
-  - **Romance**: Project Gutenberg.
-  - **Horror**: Project Gutenberg.
+```
+src/
+  main.py            # Ponto de entrada do pipeline
+  processamento.py   # Extração de PDFs, limpeza de texto, detecção de idioma
+  vetorizacao.py      # Vetorização TF-IDF, balanceamento com SMOTE
+  analise.py          # Análise de textos, estatísticas de vocabulário, wordcloud
+  classificador.py    # Treinamento e validação cruzada dos modelos
+  otimizador.py       # Otimização de hiperparâmetros com GridSearchCV
+  pdfsHorror/         # Corpus de horror (100 PDFs)
+  pdfsPoetry/         # Corpus de poesia (100 PDFs)
+  pdfsRomance/        # Corpus de romance (100 PDFs)
+```
 
-## Metodologia
+## Como Executar
 
-O procedimento envolve a aplicação de **algoritmos de aprendizado supervisionado** para classificar textos, como Árvores de Decisão, K-Nearest Neighbors, Naïve Bayes, Regressão Logística e Redes Neurais. A avaliação será feita usando **acurácia** e **F1-score**, utilizando validação cruzada estratificada com 10 folds.
+```bash
+pip install -r requirements.txt
+```
+
+```bash
+cd src && python main.py
+```
+
+## Dataset
+
+Todos os textos estão em inglês, obtidos do [Project Gutenberg](https://www.gutenberg.org/). Cada gênero contém ~100 obras, incluindo:
+
+| Gênero  | Exemplos                                               |
+|---------|--------------------------------------------------------|
+| Horror  | Dracula, Frankenstein, The Turn of the Screw            |
+| Poesia  | Leaves of Grass, Paradise Lost, The Waste Land          |
+| Romance | Don Quixote, Ivanhoe, Romeo and Juliet                  |
+
+## Modelos
+
+| Modelo               | Abordagem                                            |
+|----------------------|------------------------------------------------------|
+| Árvore de Decisão     | Pesos balanceados, ajuste de profundidade/folhas     |
+| KNN                   | Distância cosseno, otimização de k                   |
+| Naive Bayes           | Multinomial com suavização alpha                     |
+| Regressão Logística   | Regularização L2, pesos balanceados                  |
+| MLP                   | Early stopping, taxa de aprendizado adaptativa       |
+
+Todos os modelos são avaliados com validação cruzada estratificada de 10 folds e comparados pelo teste estatístico de Friedman.
+
+## Licença
+
+MIT
