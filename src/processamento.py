@@ -38,13 +38,13 @@ def processar_pdfs(diretorio_raiz: str, diretorios_pdfs: Dict[str, str]):
     if not os.path.isdir(diretorio_raiz):
         raise ValueError(f"Diretório raiz inválido: {diretorio_raiz}")
 
+    if not diretorios_pdfs:
+        raise ValueError("Nenhum diretório de PDFs fornecido")
+
     for classe, caminho in diretorios_pdfs.items():
         if not os.path.isdir(caminho):
             raise ValueError(
                 f"Diretório inválido para classe {classe}: {caminho}")
-
-    if not diretorios_pdfs:
-        raise ValueError("Nenhum diretório de PDFs fornecido")
     textos_limpos = []
     textos_originais = []
     classes = []
@@ -165,7 +165,7 @@ def limpar_texto(texto: str, preservar_palavras: Set[str] = None) -> Tuple[str, 
         palavras_limpa = [
             palavra for palavra in palavras
             if (2 <= len(palavra) <= 45 and
-                re.match(r'^[a-z\-\']+$', palavra) and
+                re.match(r'^[a-z\-]+$', palavra) and
                 (palavra not in stop_words or
                  (preservar_palavras and palavra in preservar_palavras)))
         ]

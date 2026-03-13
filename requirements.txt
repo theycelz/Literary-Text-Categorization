@@ -1,8 +1,6 @@
-PyPDF2
 pdfminer.six
 nltk
 langdetect
-chardet
 wordcloud
 scikit-learn
 pandas
