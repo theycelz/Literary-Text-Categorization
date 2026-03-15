@@ -25,7 +25,6 @@ class ProcessadorVetorial:
             max_features=max_features,
             stop_words='english'
         )
-        self.balanceamento = balanceamento
         self.logger = logging.getLogger(__name__)
 
     def _aplicar_balanceamento(self, X, y, random_state):
@@ -78,6 +77,9 @@ class ProcessadorVetorial:
             # Vetorização TF-IDF - Bag of Words expandido  (n-gramas)
             X = self.vectorizer.fit_transform(textos)
 
+            self._analisar_esparsidade(X)
+            self._analisar_vocabulario()
+
             # Primeiro balanceamento antes da divisão
             X_bal, y_bal = self._aplicar_balanceamento(
                 X, classes, random_state)
@@ -93,6 +95,8 @@ class ProcessadorVetorial:
             # Segundo balanceamento apenas no conjunto de treino
             X_train, y_train = self._aplicar_balanceamento(
                 X_train, y_train, random_state)
+
+            self._validar_balanceamento(y_train, y_test)
 
             return X_train, X_test, y_train, y_test
 

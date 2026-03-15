@@ -9,7 +9,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
-from sklearn.metrics import precision_score, recall_score, f1_score, make_scorer
+from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score, make_scorer
 import numpy as np
 import pandas as pd
 
@@ -91,8 +91,19 @@ class ClassificadorGeneros:
                     for metric in self.scoring.keys()
                 }
 
+                clf.fit(self.X_train, self.y_train)
+                y_pred = clf.predict(self.X_test)
+
+                metricas_teste = {
+                    'accuracy': accuracy_score(self.y_test, y_pred),
+                    'precision_macro': precision_score(self.y_test, y_pred, average='macro', zero_division=1),
+                    'recall_macro': recall_score(self.y_test, y_pred, average='macro', zero_division=1),
+                    'f1_macro': f1_score(self.y_test, y_pred, average='macro', zero_division=1)
+                }
+
                 self.resultados[nome] = {
-                    'metricas': metricas,
+                    'metricas_cv': metricas,
+                    'metricas_teste': metricas_teste,
                     'tempo_treino': cv_results['fit_time'].mean()
                 }
 
@@ -113,14 +124,19 @@ class ClassificadorGeneros:
                 continue
 
             try:
-                metricas = resultado.get('metricas', {})
+                metricas_cv = resultado.get('metricas_cv', {})
+                metricas_teste = resultado.get('metricas_teste', {})
                 resultados_serializaveis[modelo] = {
-                    'metricas': {
+                    'metricas_cv': {
                         metrica: {
                             'mean': float(valores['media']),
                             'std': float(valores['desvio_padrao'])
                         }
-                        for metrica, valores in metricas.items()
+                        for metrica, valores in metricas_cv.items()
+                    },
+                    'metricas_teste': {
+                        metrica: float(valor)
+                        for metrica, valor in metricas_teste.items()
                     },
                     'tempo_treino': float(resultado.get('tempo_treino', 0.0))
                 }
@@ -141,9 +157,11 @@ class ClassificadorGeneros:
             rows = []
             for modelo, resultado in resultados_serializaveis.items():
                 row = {'modelo': modelo, 'tempo_treino': resultado['tempo_treino']}
-                for metrica, valores in resultado['metricas'].items():
-                    row[f'{metrica}_mean'] = valores['mean']
-                    row[f'{metrica}_std'] = valores['std']
+                for metrica, valores in resultado['metricas_cv'].items():
+                    row[f'cv_{metrica}_mean'] = valores['mean']
+                    row[f'cv_{metrica}_std'] = valores['std']
+                for metrica, valor in resultado['metricas_teste'].items():
+                    row[f'teste_{metrica}'] = valor
                 rows.append(row)
 
             if rows:
