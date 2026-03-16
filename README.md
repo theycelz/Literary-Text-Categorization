@@ -58,7 +58,7 @@ Todos os textos estão em inglês, obtidos do [Project Gutenberg](https://www.gu
 | Regressão Logística   | Regularização L2, pesos balanceados                  |
 | MLP                   | Early stopping, taxa de aprendizado adaptativa       |
 
-Todos os modelos são avaliados com validação cruzada estratificada de 10 folds e comparados pelo teste estatístico de Friedman.
+Todos os modelos são avaliados com validação cruzada estratificada de 5 folds e comparados pelo teste estatístico de Friedman.
 
 ## Licença
 

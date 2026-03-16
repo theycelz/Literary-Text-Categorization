@@ -7,7 +7,7 @@ from collections import Counter
 import nltk
 
 from otimizador import OtimizadorModelos
-from analise import AnalisadorTextos, salvar_metricas_distribuicao
+from analise import AnalisadorTextos
 from vetorizacao import ProcessadorVetorial, verificar_distribuicao
 from processamento import processar_pdfs, criar_diretorios_saida
 from classificador import ClassificadorGeneros
@@ -37,7 +37,7 @@ def main_process():
         }
 
         logging.info("Iniciando processamento dos PDFs...")
-        textos, textos_originais, classes = processar_pdfs(
+        textos, _, classes = processar_pdfs(
             diretorio_raiz, diretorios_pdfs)
         logging.info(
             f"Processamento concluído. Total de textos: {len(textos)}")
@@ -49,7 +49,7 @@ def main_process():
                 f"Número insuficiente de amostras por classe: {dict(contagem_classes)}")
 
         analisador = AnalisadorTextos()
-        analisador.analisar_distribuicao_tamanhos(textos, classes)
+        analisador.analisar_distribuicao_tamanhos(textos, classes, diretorios['graficos'])
         vocab_relevante = analisador.analisar_vocabulario(textos, min_freq=5)
         analisador.gerar_wordcloud(vocab_relevante)
         analisador.analisar_caracteristicas_distintas(textos, classes)
@@ -75,10 +75,6 @@ def main_process():
 
         # Gerando visualizações da vetorização
         processador.visualizar_importancia_termos()
-
-        # Salvando métricas de distribuição
-        salvar_metricas_distribuicao(
-            textos, classes, diretorios['graficos'])
 
         # Treinamento e avaliação dos classificadores
         logging.info("Iniciando treinamento dos classificadores...")

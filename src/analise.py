@@ -13,18 +13,18 @@ class AnalisadorTextos:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
 
-    def analisar_distribuicao_tamanhos(self, textos: List[str], classes: List[str]) -> None:
+    def analisar_distribuicao_tamanhos(self, textos: List[str], classes: List[str], dir_saida: str = '.') -> None:
         tamanhos = [len(texto.split()) for texto in textos]
         df = pd.DataFrame({'tamanho': tamanhos, 'genero': classes})
 
         estatisticas = df.groupby('genero')['tamanho'].describe()
-        estatisticas.to_csv('estatisticas_tamanho.csv')
+        estatisticas.to_csv(os.path.join(dir_saida, 'estatisticas_tamanho.csv'))
 
         plt.figure(figsize=(10, 6))
         sns.boxplot(x='genero', y='tamanho', data=df)
         plt.title('Distribuição do Tamanho dos Textos por Gênero')
         plt.ylabel('Número de Palavras')
-        plt.savefig('distribuicao_tamanhos.png')
+        plt.savefig(os.path.join(dir_saida, 'distribuicao_tamanhos.png'))
         plt.close()
 
         self.logger.info("Análise de distribuição de tamanhos concluída")
@@ -110,14 +110,3 @@ class AnalisadorTextos:
         plt.title('Word Cloud do Vocabulário')
         plt.savefig('wordcloud_vocabulario.png')
         plt.close()
-
-
-def salvar_metricas_distribuicao(textos, classes, dir_graficos):
-    tamanhos = [len(texto.split()) for texto in textos]
-    plt.figure(figsize=(10, 6))
-    sns.boxplot(x=classes, y=tamanhos)
-    plt.title('Distribuição do Tamanho dos Textos por Gênero')
-    plt.xlabel('Gênero')
-    plt.ylabel('Número de Palavras')
-    plt.savefig(os.path.join(dir_graficos, 'distribuicao_tamanhos.png'))
-    plt.close()
