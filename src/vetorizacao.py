@@ -45,10 +45,19 @@ class ProcessadorVetorial:
                 classe: tamanho_alvo for classe in contagem_classes.keys()}
 
             # Aplicando apenas SMOTE primeiro
+            min_amostras = min(contagem_classes.values())
+            k = min(5, min_amostras - 1)
+            if k < 1:
+                self.logger.warning(
+                    f"Classe com apenas {min_amostras} amostra(s), "
+                    "balanceamento SMOTE não aplicável"
+                )
+                return X, y
+
             smote = SMOTE(
                 sampling_strategy=strategy,
                 random_state=random_state,
-                k_neighbors=min(5, min(contagem_classes.values())-1)
+                k_neighbors=k
             )
 
             X_bal, y_bal = smote.fit_resample(X, y)

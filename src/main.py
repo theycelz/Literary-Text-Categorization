@@ -102,9 +102,9 @@ def main_process():
         otimizador.salvar_resultados(diretorio_saida=diretorios['resultados'])
         resultados_significancia = otimizador.avaliar_significancia()
 
-        # Salvando resultados de significância
-        with open(os.path.join(diretorios['resultados'], 'resultados_significancia.json'), 'w') as f:
-            json.dump(resultados_significancia, f, indent=4)
+        if resultados_significancia:
+            with open(os.path.join(diretorios['resultados'], 'resultados_significancia.json'), 'w') as f:
+                json.dump(resultados_significancia, f, indent=4)
 
         logging.info("Pipeline completo executado com sucesso!")
 

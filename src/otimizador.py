@@ -121,47 +121,46 @@ class OtimizadorModelos:
             self.otimizar_modelo(nome, modelo, self.param_grids.get(nome, {}))
 
     def avaliar_significancia(self):
-        """Realiza o teste de Friedman com número igual de amostras."""
+        """Realiza o teste de Friedman por métrica entre modelos."""
         try:
             metricas = ['accuracy', 'precision_macro',
                         'recall_macro', 'f1_macro']
-            dados = {metrica: [] for metrica in metricas}
             modelos = list(self.resultados.keys())
 
-            # Encontrar o menor número de amostras entre todos os modelos
-            min_samples = float('inf')
-            for modelo in modelos:
-                for metrica in metricas:
+            if len(modelos) < 3:
+                self.logger.warning(
+                    "Mínimo de 3 modelos necessário para teste de Friedman")
+                return None
+
+            resultados_significancia = {}
+
+            for metrica in metricas:
+                scores_por_modelo = []
+                min_samples = float('inf')
+
+                for modelo in modelos:
                     scores = self.resultados[modelo]['cv_results'][f'mean_test_{metrica}']
                     min_samples = min(min_samples, len(scores))
 
-            # Coletar scores com mesmo tamanho
-            scores_padronizados = []
-            for modelo in modelos:
-                modelo_scores = []
-                for metrica in metricas:
+                for modelo in modelos:
                     scores = self.resultados[modelo]['cv_results'][f'mean_test_{metrica}']
-                    modelo_scores.extend(scores[:min_samples])
-                scores_padronizados.append(modelo_scores)
+                    scores_por_modelo.append(scores[:min_samples])
 
-            if len(scores_padronizados) >= 2:
-                stat, p = stats.friedmanchisquare(*scores_padronizados)
+                stat, p = stats.friedmanchisquare(*scores_por_modelo)
 
-                resultados = {
+                resultados_significancia[metrica] = {
                     'statistic': float(stat),
                     'p_value': float(p),
-                    'n_samples': min_samples
+                    'significativo': p < 0.05,
+                    'n_samples': int(min_samples)
                 }
 
                 self.logger.info(
-                    f"Teste de Friedman: estatística={stat:.4f}, p-valor={p:.4f}, "
-                    f"n_amostras={min_samples}"
+                    f"Friedman [{metrica}]: estatística={stat:.4f}, "
+                    f"p-valor={p:.4f}, significativo={p < 0.05}"
                 )
-                return resultados
-            else:
-                self.logger.warning(
-                    "Número insuficiente de modelos para teste de Friedman")
-                return None
+
+            return resultados_significancia
 
         except Exception as e:
             self.logger.error(
