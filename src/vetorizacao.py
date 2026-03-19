@@ -1,3 +1,4 @@
+import os
 import logging
 from collections import Counter
 from typing import List, Tuple
@@ -163,12 +164,11 @@ class ProcessadorVetorial:
             f"Bigramas: {bigramas}"
         )
 
-    def visualizar_importancia_termos(self, n_termos: int = 20) -> None:
+    def visualizar_importancia_termos(self, n_termos: int = 20, dir_saida: str = '.') -> None:
         """Visualiza os termos mais importantes do vocabulário."""
         try:
             termos = self.vectorizer.get_feature_names_out()
 
-            # Ordenando por importância
             indices = np.argsort(self.vectorizer.idf_)[-n_termos:]
 
             plt.figure(figsize=(12, 6))
@@ -179,7 +179,7 @@ class ProcessadorVetorial:
             plt.xticks(rotation=45, ha='right')
             plt.title('Termos Mais Importantes do Vocabulário')
             plt.tight_layout()
-            plt.savefig('termos_importantes.png')
+            plt.savefig(os.path.join(dir_saida, 'termos_importantes.png'))
             plt.close()
 
         except Exception as e:

@@ -50,9 +50,9 @@ def main_process():
 
         analisador = AnalisadorTextos()
         analisador.analisar_distribuicao_tamanhos(textos, classes, diretorios['graficos'])
-        vocab_relevante = analisador.analisar_vocabulario(textos, min_freq=5)
-        analisador.gerar_wordcloud(vocab_relevante)
-        analisador.analisar_caracteristicas_distintas(textos, classes)
+        vocab_relevante = analisador.analisar_vocabulario(textos, min_freq=5, dir_saida=diretorios['analises'])
+        analisador.gerar_wordcloud(vocab_relevante, dir_saida=diretorios['graficos'])
+        analisador.analisar_caracteristicas_distintas(textos, classes, dir_saida=diretorios['analises'])
 
         logging.info("Iniciando vetorização e divisão dos dados...")
         processador = ProcessadorVetorial(
@@ -74,7 +74,7 @@ def main_process():
         verificar_distribuicao(y_train)
 
         # Gerando visualizações da vetorização
-        processador.visualizar_importancia_termos()
+        processador.visualizar_importancia_termos(dir_saida=diretorios['graficos'])
 
         # Treinamento e avaliação dos classificadores
         logging.info("Iniciando treinamento dos classificadores...")

@@ -29,7 +29,7 @@ class AnalisadorTextos:
 
         self.logger.info("Análise de distribuição de tamanhos concluída")
 
-    def analisar_vocabulario(self, textos: List[str], min_freq: int = 5) -> Dict:
+    def analisar_vocabulario(self, textos: List[str], min_freq: int = 5, dir_saida: str = '.') -> Dict:
         todas_palavras = []
         for texto in textos:
             palavras = word_tokenize(texto.lower())
@@ -39,7 +39,7 @@ class AnalisadorTextos:
         vocab_relevante = {palavra: freq for palavra,
                            freq in freq_palavras.items() if freq >= min_freq}
 
-        with open('analise_vocabulario.txt', 'w', encoding='utf-8') as f:
+        with open(os.path.join(dir_saida, 'analise_vocabulario.txt'), 'w', encoding='utf-8') as f:
             f.write(f"Tamanho total do vocabulário: {len(freq_palavras)}\n")
             f.write(
                 f"Vocabulário relevante (freq >= {min_freq}): {len(vocab_relevante)}\n\n")
@@ -49,7 +49,7 @@ class AnalisadorTextos:
 
         return vocab_relevante
 
-    def analisar_caracteristicas_distintas(self, textos: List[str], classes: List[str]) -> None:
+    def analisar_caracteristicas_distintas(self, textos: List[str], classes: List[str], dir_saida: str = '.') -> None:
         generos_unicos = set(classes)
         vocab_por_genero = {}
 
@@ -63,22 +63,23 @@ class AnalisadorTextos:
 
             vocab_por_genero[genero] = Counter(todas_palavras)
 
-        with open('caracteristicas_distintas.txt', 'w', encoding='utf-8') as f:
+        totais = {genero: sum(vocab.values()) for genero, vocab in vocab_por_genero.items()}
+
+        with open(os.path.join(dir_saida, 'caracteristicas_distintas.txt'), 'w', encoding='utf-8') as f:
             for genero in generos_unicos:
                 f.write(f"\nPalavras características do gênero {genero}:\n")
                 palavras_caracteristicas = []
                 vocab_atual = vocab_por_genero[genero]
+                total_atual = totais[genero]
 
                 for palavra, freq in vocab_atual.items():
-                    freq_relativa_atual = freq / sum(vocab_atual.values())
+                    freq_relativa_atual = freq / total_atual
                     eh_caracteristica = True
 
                     for outro_genero in generos_unicos:
                         if outro_genero != genero:
-                            outro_vocab = vocab_por_genero[outro_genero]
-                            freq_outro = outro_vocab.get(palavra, 0)
-                            freq_relativa_outro = freq_outro / \
-                                sum(outro_vocab.values())
+                            freq_outro = vocab_por_genero[outro_genero].get(palavra, 0)
+                            freq_relativa_outro = freq_outro / totais[outro_genero]
 
                             if freq_relativa_outro >= freq_relativa_atual:
                                 eh_caracteristica = False
@@ -99,7 +100,7 @@ class AnalisadorTextos:
             palavras_limpas) / len(palavras_originais) if palavras_originais else 0
         return proporcao_mantida >= 0.4
 
-    def gerar_wordcloud(self, vocabulario: Dict[str, int]) -> None:
+    def gerar_wordcloud(self, vocabulario: Dict[str, int], dir_saida: str = '.') -> None:
         freq_palavras = Counter(vocabulario)
         wordcloud = WordCloud(
             width=800, height=400, background_color='white').generate_from_frequencies(freq_palavras)
@@ -108,5 +109,5 @@ class AnalisadorTextos:
         plt.imshow(wordcloud, interpolation='bilinear')
         plt.axis('off')
         plt.title('Word Cloud do Vocabulário')
-        plt.savefig('wordcloud_vocabulario.png')
+        plt.savefig(os.path.join(dir_saida, 'wordcloud_vocabulario.png'))
         plt.close()
