@@ -1,7 +1,6 @@
 import os
 import logging
 import multiprocessing
-from collections import Counter
 from typing import Dict, Set, Tuple
 import pandas as pd
 from pdfminer.high_level import extract_text
@@ -20,8 +19,7 @@ def processar_pdf(args):
         texto_extraido = pdf_para_txt(arquivo)
         valido, motivo = validar_texto(texto_extraido)
         if not valido:
-            logging.warning(f"Texto inválido em {arquivo}: {motivo}", extra={
-                            'nome_funcao': 'processar_pdf'})
+            logging.warning(f"Texto inválido em {arquivo}: {motivo}")
             return None
         texto_limpo, texto_original = limpar_texto(
             texto_extraido, preservar_palavras)
@@ -144,9 +142,8 @@ def limpar_texto(texto: str, preservar_palavras: Set[str] = None) -> Tuple[str, 
         texto_original = texto
         texto = texto.lower()
         texto = texto.encode('ascii', errors='ignore').decode()
-        texto = re.sub(r'[^a-z0-9\s\-\'"]', ' ', texto)
+        texto = re.sub(r'[^a-z0-9\s\-]', ' ', texto)
         texto = re.sub(r'\s+', ' ', texto).strip()
-        texto = texto.replace("'", "")
 
         palavras = []
         try:

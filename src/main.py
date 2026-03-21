@@ -13,10 +13,13 @@ from processamento import processar_pdfs, criar_diretorios_saida
 from classificador import ClassificadorGeneros
 
 logging.basicConfig(
-    filename='processamento.log',
     level=logging.INFO,
     format='%(asctime)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    datefmt='%Y-%m-%d %H:%M:%S',
+    handlers=[
+        logging.FileHandler('processamento.log'),
+        logging.StreamHandler()
+    ]
 )
 
 
@@ -122,8 +125,9 @@ def main_process():
 
 
 if __name__ == "__main__":
-    nltk.download('punkt')
-    nltk.download('stopwords')
+    nltk.download('punkt', quiet=True)
+    nltk.download('stopwords', quiet=True)
+    nltk.download('punkt_tab', quiet=True)
     nltk_data_dir = os.path.expanduser('~/nltk_data')
     os.environ['NLTK_DATA'] = nltk_data_dir
     try:
